@@ -7,7 +7,7 @@ import re
 import htmlentitydefs
 
 
-from pylons import cache, config, tmpl_context as c
+from pylons import cache, config, request, tmpl_context as c
 from pylons.i18n.translation import ugettext as _
 from recaptcha.client.captcha import displayhtml
 import formencode

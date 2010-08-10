@@ -24,9 +24,6 @@ class AccountController(BaseController):
 
     openid_store = FileOpenIDStore('/var/tmp')
 
-    def lets_see(self):
-        exit(session)
-
     def index(self):
         redirect(url(controller='blog', action='index'))
 
@@ -90,6 +87,7 @@ class AccountController(BaseController):
             user = model.User(name=name, email=email,
                 identifier=result.identity_url
             )
+            model.session.add(user)
             model.session.commit()
             session['userid'] = user.id
         session.save()

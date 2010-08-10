@@ -2,3 +2,5 @@
 
 from muse.model.entities import Category, Comment, Guest, Post, User
 from muse.model import forms
+
+session = None

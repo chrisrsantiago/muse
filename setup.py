@@ -14,12 +14,13 @@ setup(
     url='http://faltzershq.com/',
     install_requires=[
         "Pylons>=1.0",
-        "SQLAlchemy>=0.5",
+        "SQLAlchemy>=0.6.3",
+        "Elixir>=0.7.1",
         "python-openid>=2.2.5",
         "SUIT>=2.0.1",
         "rulebox>=1.1.0",
         "lxml>=2.2.7",
-        "FormEncode>=1.2.1",
+        "FormEncode>=1.2.2",
         "recaptcha-client>=1.0.5"
     ],
     setup_requires=["PasteScript>=1.6.3"],

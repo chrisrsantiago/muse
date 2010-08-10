@@ -7,9 +7,9 @@
     [try]<meta name="keywords" content="[c]meta_keywords[/c]">[/try]
 
     <title>[c]title[/c] | [c]config.blog_title[/c]</title>
-
+    
     <link href="http://fonts.googleapis.com/css?family=Molengo' rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="/css/style.css">
+    <link rel="stylesheet" type="text/css" href="/js/css/style.css">
 
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.3/jquery-ui.min.js"></script>
     <script type="text/javascript" src="/js/openid.jquery.js"></script>
