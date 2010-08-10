@@ -1,0 +1,1 @@
+<img src="[c]_gravatar[/c]" alt="">
