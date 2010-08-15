@@ -3,12 +3,14 @@ import logging
 from pylons import config, request, response, session, tmpl_context as c, url
 from pylons.decorators import rest, validate
 from pylons.controllers.util import abort, redirect
+from routes import request_config
+import elixir
 from sqlalchemy.orm.exc import NoResultFound
+from openid.yadis.discover import DiscoveryFailure
 from openid.consumer.consumer import Consumer
 from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.store.filestore import FileOpenIDStore
-from openid.yadis.discover import DiscoveryFailure
-from routes import request_config
+import formencode
 
 from muse.lib.base import _, BaseController, render
 from muse.lib.decorators import require
@@ -25,36 +27,39 @@ class AccountController(BaseController):
     openid_store = FileOpenIDStore('/var/tmp')
 
     def index(self):
+        # XXX: Until I make a member's area or something like that.
         redirect(url(controller='blog', action='index'))
 
-    def openid(self):
-        return render('account/openid.tpl', slacks=True)
-
     @require('guest')
-    @validate(schema=model.forms.Login(), form='what_is_openid')
     def login(self):
+        login = render('account/login.tpl', slacks=True)
+
+        if request.environ['REQUEST_METHOD'] != 'POST':
+            return login
+
         try:
-            openid_url = self.form_result['openid_identifier']
-        except (AttributeError):
-            redirect(url(controller='blog', action='index'))
+            form = model.forms.Login().to_python(request.params)            
+        except formencode.validators.Invalid, e:
+            return h.htmlfill(e, form=login)
+
         cons = Consumer(session=session, store=self.openid_store)
-        try:
-            auth_request = cons.begin(openid_url)
-            sreg_request = SRegRequest(optional=['nickname', 'email', 'gender',
-                'country', 'language', 'timezone'])
-            auth_request.addExtension(sreg_request)
-            host = request.headers['host']
-            protocol = request_config().protocol
-            return_url = url(host=host, controller='account',
-                action='login_complete')
-            new_url = auth_request.redirectURL(return_to=return_url,
-                realm='%s://%s' % (protocol, host))
-            session['redirect_url'] = request.environ.get('HTTP_REFERER',
-                url(controller='blog', action='index'))
-            session.save()
-            redirect(new_url)
-        except DiscoveryFailure:
-            return _('No usable OpenID provider found.')
+        auth_request = cons.begin(form['openid_identifier'])
+        auth_request.addExtension(SRegRequest(optional=[
+            'nickname', 'email'
+        ]))
+        host = request.headers['host']
+        realm = '%s://%s' % (request_config().protocol, host)
+        return_url = url(
+            host=host, controller='account', action='login_complete'
+        )
+        new_url = auth_request.redirectURL(
+            return_to=return_url, realm=realm
+        )
+        session['redirect_url'] = request.environ.get(
+            'HTTP_REFERER', url(controller='blog', action='index')
+        )
+        session.save()
+        redirect(new_url)
 
     @require('guest')
     def login_complete(self):
@@ -84,11 +89,11 @@ class AccountController(BaseController):
                 name = sreg_res['nickname']
             else:
                 name = result.identity_url
-            user = model.User(name=name, email=email,
-                identifier=result.identity_url
+            user = model.User(name=name, identifier=result.identity_url,
+                email=email
             )
-            model.session.add(user)
-            model.session.commit()
+            elixir.session.add(user)
+            elixir.session.commit()
             session['userid'] = user.id
         session.save()
         redirect_url = session.get('redirect_url',

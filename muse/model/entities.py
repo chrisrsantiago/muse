@@ -1,17 +1,11 @@
 import datetime
-import re
 
 from elixir import *
 from sqlalchemy import and_
 
-__all__ = ['Category', 'Comment', 'Guest', 'Post', 'User']
+from muse.lib import helpers as h
 
-def generate_slug(title):
-    """Automatically generates a slug (URL) if there was none supplied.
-    The title attribute is lowercased, and all irregular characters
-    are substituted with a dash instead.
-    """
-    return re.sub('([^A-Za-z0-9_-])', '-', title).lower()
+__all__ = ['Category', 'Comment', 'Guest', 'Post', 'User']
 
 class Category(Entity):
     using_options(tablename='categories')
@@ -19,20 +13,34 @@ class Category(Entity):
 
     id = Field(Integer(10), primary_key=True)
     title = Field(Unicode(255))
-    description = Field(UnicodeText, nullable=True)
-    slug = Field(Unicode(255), unique=True, default=generate_slug)
+    slug = Field(Unicode(255), unique=True)
 
-    def __init__(self, title, description='', slug=''):
+    def __init__(self, title, slug=''):
         self.title = title
-        self.description = description
-        self.slug = slug
+        self.slug = h.generate_slug(slug)
+        if not self.slug:
+            # Automatically generate a slug (URL) from the title if there was
+            # none supplied.
+            self.slug = h.generate_slug(self.title)
 
     def __repr__(self):
         return '<Category: %s - %s>' % (self.title, self.slug)
 
     @classmethod
-    def get_by_id(self, category):
-        category = Category.query.filter(Category.slug == category).one()
+    def get_all(self):
+        categories = Category.query.all()
+        return categories
+
+    @classmethod
+    def get_by_id(self, id):
+        category = Category.query.filter(Category.id == id).one()
+        return category
+
+    @classmethod
+    def get_by_slug(self, category):
+        category = Category.query.filter(
+            Category.slug == h.generate_slug(category)
+        ).one()
         return category
 
 class Comment(Entity):
@@ -47,19 +55,15 @@ class Comment(Entity):
     content = Field(UnicodeText)
     ip = Field(Unicode(16))
     posted = Field(Date, default=datetime.datetime.now)
-    approved = Field(Integer(1))
 
-    def __init__(self, post_id, content, name='', email='', url='', ip='',
-        user_id=0, approved=1, **kwargs
-    ):
+    def __init__(self, post_id, content, ip, **kwargs):
         self.post_id = post_id
-        self.name = name
-        self.email = email
         self.content = content
-        self.url = url
         self.ip = ip
-        self.user_id = user_id
-        self.approved = approved
+        self.user_id = kwargs.get('user_id', '')
+        self.name = kwargs.get('name', '')
+        self.email = kwargs.get('email', '')
+        self.url = kwargs.get('url', '')
 
     def __repr__(self):
         return '<Comment: #%d - by %s>' % (self.id, self.name)
@@ -79,21 +83,23 @@ class Post(Entity):
 
     id = Field(Integer(10), primary_key=True)
     title = Field(Unicode(255))
-    contents = Field(UnicodeText)
+    content = Field(UnicodeText)
     posted = Field(Date, default=datetime.datetime.now)
-    slug = Field(Unicode(255), default=generate_slug)
-    summary = Field(UnicodeText)
+    slug = Field(Unicode(255), unique=True)
+    summary = Field(UnicodeText, nullable=True)
+    comments_count = Field(Integer(10), nullable=True, default=0)
 
-    def __init__(self, title, category, contents, author_id, posted='',
-        slug='', summary=''
-    ):
+    def __init__(self, title, category_id, content, author_id, **kwargs):
         self.title = title
         self.category_id = category_id
-        self.contents = contents
+        self.content = content
         self.author_id = author_id
-        self.posted = posted
-        self.slug = slug
-        self.summary = summary
+        self.slug = h.generate_slug(kwargs.get('slug', ''))
+        if not self.slug:
+            # Automatically generate a slug (URL) from the title if there was
+            # none supplied.
+            self.slug = h.generate_slug(self.title)
+        self.summary = kwargs.get('summary', '')
 
     def __repr__(self):
         return '<Post: "%s" by %s>' % (self.title, self.author.name)
@@ -104,9 +110,17 @@ class Post(Entity):
         return posts
 
     @classmethod
-    def get_by_slug(self, slug, category):
+    def get_by_slug(self, slug):
         post = Post.query.filter(
-            and_(Post.slug == slug, Category.slug == category)
+            and_(Post.slug == h.generate_slug(slug))
+        ).one()
+        post.comments_count = len(post.comments)
+        return post
+
+    @classmethod
+    def get_by_slug_category(self, slug, category):
+        post = Post.query.filter(
+            and_(Post.slug == h.generate_slug(slug), Category.slug == category)
         ).one()
         post.comments_count = len(post.comments)
         return post
@@ -119,10 +133,10 @@ class User(Entity):
     id = Field(Integer(10), primary_key=True)
     name = Field(Unicode(255))
     email = Field(Unicode(255))
-    identifier = Field(Unicode(255))
+    identifier = Field(Unicode(255), unique=True)
     admin = Field(Boolean)
 
-    def __init__(self, name, email, identifier, admin=0):
+    def __init__(self, name, identifier, email='', admin=0):
         self.name = name
         self.email = email
         self.identifier = identifier
@@ -130,6 +144,11 @@ class User(Entity):
 
     def __repr__(self):
         return '<User: %s - %s>' % (self.name, self.identifier)
+
+    @classmethod
+    def get_by_name(self, identifier):
+        user = User.query.filter(User.name == value).one()
+        return user
 
     @classmethod
     def get_by_identifier(self, identifier):

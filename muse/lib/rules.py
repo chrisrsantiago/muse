@@ -19,17 +19,12 @@ def gravatar(params):
     params['string'] = h.render('_gravatar.tpl')
     return params
 
-def message(params):
-    """Displays an information, warning or success message to the user."""
-    if params['var']['type'] == 'error':
-        c._msg_title = _('Error!')
-    elif params['var']['type'] == 'success':
-        c._msg_title = _('Success!')
-    else:
-        c._msg_title = _('For Your Information')
-    c._msg_type = params['var']['type']
-    c._msg = params['string']
-    params['string'] = render('_message.tpl')
+def replace(params):
+    """Replace in a string."""
+    params['string'] = params['string'].replace(
+        params['var']['what'],
+        params['var']['with']
+    )
     return params
 
 muserules = {
@@ -55,10 +50,10 @@ muserules = {
         'create': '[gravatar]',
         'skip': True
     },
-    '[message]':
+    '[replace]':
     {
-        'close': '[/message]',
-        'functions': [templating.walk, templating.attribute, message],
+        'close': '[/replace]',
+        'functions': [templating.walk, templating.attribute, replace],
         'var':
         {
             'equal': templating.default['equal'],
@@ -66,16 +61,17 @@ muserules = {
             'quote': templating.default['quote'],
             'var':
             {
-                'type': 'info'
+                'what': '',
+                'with': ''
             }
         }
     },
-    '[message':
+    '[replace':
     {
         'close': ']',
-        'create': '[message]',
+        'create': '[replace]',
         'skip': True
-    }
+    },
 }
 
 # Make sure [call] and [transform] use our helpers.

@@ -1,42 +1,42 @@
 """Helper functions
 
 Consists of functions to typically be used within templates, but also
-available to Controllers. This module is available to templates as 'h'.
+available to Controllers.  The functions in this module are available to
+templates via the [call /] or [transform] rules.
+
+For example, if I wanted to fetch a user's IP, I would only have to call:
+
+    [call function="get_ip" / ]
+
+If I wanted to format some text for Markdown syntax, one would go:
+    
+    [transform function="convert_text" parser="markdown"]*Roar*[/transform]
 """
 import re
 import htmlentitydefs
 
-
-from pylons import cache, config, request, tmpl_context as c
+from pylons import cache, config, request, response, tmpl_context as c
 from pylons.i18n.translation import ugettext as _
 from recaptcha.client.captcha import displayhtml
-import formencode
-import suit
+from dateutil import parser as dateutil
+from formencode import htmlfill as htmlfill_
+from webhelpers.pylonslib import Flash
 from webhelpers.html import escape, HTML, literal, url_escape
-from webhelpers.html.converters import markdown, textile, nl2br
+from webhelpers.html.converters import textile, nl2br
 from lxml.html.clean import Cleaner
+import suit
 
+from muse.lib.markdown import markdown
 from muse.lib.templating import render
 
 _char = re.compile(r'&(\w+?);')
 _dec  = re.compile(r'&#(\d{2,4});')
 _hex  = re.compile(r'&#x(\d{2,4});')
 
-def _get_htmlentitydefs(m):
-    try:
-        return htmlentitydefs.entitydefs[m.group(1)]
-    except KeyError:
-        return m.group(0)
+flash = Flash()
 
 def base(string, base='base.tpl'):
     """Wrap the current content against a base template."""
-    try:
-        c.user = c.user.to_json()
-    except AttributeError:
-        # Assume that it is an instance of Guest() and let it slide.
-        pass
-    c.config = config
-    c.categories = make_categories(c.categories)
     c.content = string
     return render(base)
 
@@ -46,10 +46,10 @@ def convert_text(string, parser=''):
     returned.
     """
     if not parser:
-        parser = config['post_parser']
+        parser = config['post.parser']
     string = unescape(string)
     if parser == 'markdown':
-        return markdown(string, safe_mode='escape')
+        return markdown.convert(string)
     if parser == 'textile':
         return textile(string, sanitize=True, encoding='utf-8')    
     # Since no parser was selected, return sanitized HTML output instead.
@@ -60,85 +60,65 @@ def convert_text(string, parser=''):
     )
     return cleaner.clean_html(literal(string))
 
-def format_date(posted, format=''):
+def convert_datetime(date, format=''):
     """Convert a datetime.datetime into string representation using the date
     settings specified in the configuration INI file or by the format argument.
     """
     if not format:
-        format = config['blog_dateformat']
+        format = config['blog.dateformat']
     try:
-        return posted.strftime(format)
-    except AttributeError, TypeError:
+        return date.strftime(format)
+    except AttributeError:
+        return dateutil.parse(date).strftime(format)
+    except TypeError:
         return _('Unknown')
 
 def get_ip():
     """Retrieve a client's IP address."""
-    return unicode(request.environ.get('HTTP_X_FORWARDED_FOR',
+    return request.environ.get(
+        'HTTP_X_FORWARDED_FOR',
         request.environ.get('REMOTE_ADDR', '127.0.0.1')
-    ))
+    )
+
+
+def generate_slug(string):
+    """The title converted to all lowercase, and all irregular characters
+    are substituted with a dash instead."""
+    regex = re.compile(r"\W+", re.U)
+    string = re.sub(
+        r'^\W+|\W+$',
+        '',
+        re.sub(regex, '-', string.replace('_', '-'))
+    )
+    return string.lower()
 
 def htmlfill(error, form):
-    return formencode.htmlfill.render(form=form, defaults=request.params,
+    return htmlfill_.render(form=form, defaults=request.params,
         errors=(error and error.unpack_errors()),
         encoding=response.determine_charset()
     )
 
+def recaptcha():
+    if c.user.id:
+        return ''
+    return displayhtml(config.get('recaptcha.public_key', ''))
+
 def unescape(string):
     """Back-replace html-safe sequences to special characters."""
-    result = _hex.sub(lambda x: unichr(int(x.group(1), 16)),
-        _dec.sub(lambda x: unichr(int(x.group(1))),
-        _char.sub(_get_htmlentitydefs, string))
+    def _get_htmlentitydefs(m):
+        try:
+            return htmlentitydefs.entitydefs[m.group(1)]
+        except KeyError:
+            return m.group(0)
+
+    result = _hex.sub(
+        lambda x: unichr(int(x.group(1), 16)),
+        _dec.sub(
+            lambda x: unichr(int(x.group(1))),
+            _char.sub(_get_htmlentitydefs, string)
+        )
     )
     if string.__class__ != unicode:
         return result.encode('utf-8')
     else:
         return result
-
-def make_posts(iterable):
-    """Template helper; iterate through the list of posts and convert the
-    instances to dictionaries so PySUIT can loop through the values.
-    """
-    posts = []
-    for i, post in enumerate(iterable):
-        post = post.to_dict(deep={'category': {}, 'comments': {}})
-        post['comments_count'] = len(post['comments'])
-        post['rowcolor'] = (i % 2 and '1' or '0')
-        post['posted'] = format_date(post['posted'])
-        del post['comments']
-        posts.append(post)
-    return posts
-
-def make_categories(iterable):
-    """Template helper; iterate through the list of comments and convert the
-    instances to dictionaries so PySUIT can loop through the values.
-    """
-    categories = []
-    for i, category in enumerate(iterable):
-        category = category.to_dict(deep={'posts': {}})
-        category['posts_count'] = len(category['posts'])
-        category['rowcolor'] = (i % 2 and '1' or '0')
-        del category['posts']
-        categories.append(category)
-    return categories
-
-def make_comments(iterable):
-    """Template helper; iterate through the list of comments and convert the
-    instances to dictionaries so PySUIT can loop through the values.
-    """
-    comments = []
-    for i, comment in enumerate(iterable):
-        comment = comment.to_dict(deep={'user': {}})
-        comment['rowcolor'] = (i % 2 and '1' or '0')
-        comment['posted'] = format_date(comment['posted'])
-        comments.append(comment)
-    return comments
-
-def post():
-    """Template helper; format dates for articles and set-up recaptcha."""
-    try:
-        c.apost.posted = c.post.posted.strftime(config['blog_dateformat'])
-        c.comments = make_comments(c.post.comments)
-    except AttributeError:
-        pass
-    c.recaptcha = displayhtml(config['recaptcha_public_key'])
-    return ''

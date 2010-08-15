@@ -1,9 +1,0 @@
-[transform function="base"]
-[assign var="title"]Downloads[/assign]
-
-<p>Human Knowledge belongs to the world. Because of that, I'm willing to share some these small scripts. I like sharing code and the like, since it makes the Internet a better place, and because I shouldn't take credit for these. You are free to do whatever you want with these. Distribute them, modify, claim as yours, sell and the like.Enjoy!</p><h2>Styleswitcher</h2><p>
-	</p><p>It has occured to me that there are a lot of good styleswitching guides out there, some written in JavaScript, and some written in a server-side scripting language. Many tutorials though, have flaws in making them. For one, some don't really go in-depth about how it is a good idea to check if the style exists before setting the cookie, and it turns out anybody who is experienced in manipulating code can just change the cookie to whatever they want, and have that value pass. It isn't a big deal, though it is still a good idea to check that a style actually exists, so you don't give your users a blank page over serving an existing style. Because of this, I've made my own little version of a styleswitcher script.</p><p>
-	</p><p style="text-align: right;"><a href="/dl/styleswitcher/download.zip">Download it (.zip)</a></p><p>
-</p><h2>Server Checking Script</h2><p>
-	</p><p>This small shell script, intended for Linux servers, and originally built for cPanel operated servers checks the current status of the vital services (Apache, DNS, MySQL, FTP), and if they are stopped, then it will automatically attempt to start it for you. Recommended use is if it is set to run from a cronjob.</p><p>	</p><p style="text-align: right;"><a href="/dl/servercheck/download.sh">Download it (.sh)</a></p>
-[/transform]

@@ -21,7 +21,8 @@ setup(
         "rulebox>=1.1.0",
         "lxml>=2.2.7",
         "FormEncode>=1.2.2",
-        "recaptcha-client>=1.0.5"
+        "recaptcha-client>=1.0.5",
+        "python-dateutil>=1.2"
     ],
     setup_requires=["PasteScript>=1.6.3"],
     packages=find_packages(exclude=['ez_setup']),

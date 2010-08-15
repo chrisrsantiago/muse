@@ -1,18 +1,76 @@
-from formencode import Schema
-from formencode.validators import String, Int, Email, OpenId, URL, Invalid
+from formencode import Schema, FancyValidator
+from formencode.validators import String, Int, Invalid, Email, URL 
+from openid.fetchers import HTTPFetchingError
+from openid.yadis.discover import discover, DiscoveryFailure
 from sqlalchemy.orm.exc import NoResultFound
 from pylons import config, tmpl_context as c
 
-from muse.model import User
+from muse.model import Category, Post as Post_, User
 
-class Username(String):
+
+class CategoryId(Int):
+    """Checks against the database to verify that a category exists."""
     def _to_python(self, value, c):
         try:
-            user = User.query.filter(User.name == value).one()
+            category = Category.get_by_id(value)
+        except NoResultFound:
+            raise Invalid(_('Category does not exist'), value, c)
+        return Int._to_python(self, value, c)
+
+
+class CategoryTitle(String):
+    """Checks against the database to verify that a category doesn't exist."""
+    def _to_python(self, value, c):
+        try:
+            category = Category.get_by_slug(value)
+            raise Invalid(
+                _('There is already a category with that name.'), value, c
+            )
+        except NoResultFound:
+            pass
+        return String._to_python(self, value, c)
+
+
+class PostSlug(String):
+    """Checks against the database to verify that a slug is not taken."""
+    def _to_python(self, value, c):
+        try:
+            user = Post_.get_by_slug(value)
+            raise Invalid('Slug already in use.', value, c)
+        except NoResultFound:
+            pass
+        return String._to_python(self, value, c)
+
+
+class Username(String):
+    """Checks against the database to verify that a username is not taken."""
+    def _to_python(self, value, c):
+        try:
+            user = User.get_by_name(value)
             raise Invalid('Username Taken', value, c)
         except NoResultFound:
             pass
         return String._to_python(self, value, c)
+
+
+class OpenId(String):
+    """Verify that the provided URI/XRI is an OpenID."""
+    def _to_python(self, value, c):
+        try:
+            discovery = discover(value)
+        except:
+            raise Invalid('Invalid OpenID', value, c)
+        return String._to_python(self, value, c)
+
+class Post(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+    title = String(not_empty=True)
+    category_id = CategoryId()
+    category_title = CategoryTitle()
+    slug = PostSlug()
+    summary = String()
+    content = String(not_empty=True)
 
 
 class Comment(Schema):

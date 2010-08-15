@@ -2,6 +2,7 @@
 [assign var="title"][gettext]Posts categorized under[/gettext] "[c]category.title[/c]"[/assign]
 [transform function="base"]
     [if condition="posts"]
+        [assign var="row" json="true"]1[/assign]
         [loop value="post" iterable="posts"]
             [execute][template]_posts.tpl[/template][/execute]
         [/loop]

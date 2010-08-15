@@ -6,6 +6,7 @@
         [return /]
     [/if]
 
+    [assign var="row" json="true"]1[/assign]
     [loop value="post" iterable="posts"]
         [execute][template]_posts.tpl[/template][/execute]
     [/loop]

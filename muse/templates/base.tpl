@@ -4,42 +4,40 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     [try]<meta name="description" content="[c]meta_description[/c]">[/try]
-    [try]<meta name="keywords" content="[c]meta_keywords[/c]">[/try]
 
-    <title>[c]title[/c] | [c]config.blog_title[/c]</title>
-    
-    <link href="http://fonts.googleapis.com/css?family=Molengo' rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="/js/css/style.css">
+    <title>[c]title[/c] | That Faltzer Ain't One of Ours</title>
 
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.3/jquery-ui.min.js"></script>
-    <script type="text/javascript" src="/js/openid.jquery.js"></script>
-    <script type="text/javascript" src="/js/main.js"></script>
+    <link href="http://fonts.googleapis.com/css?family=Molengo" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
 </head>
 <body>
     <div id="header">
         <div id="logo"></div>
         <div id="login">
             [if condition="user.id" not="true"]
-            <form action="[url controller="account" action="login" /]" method="post">
-                <p><input type="text" name="openid_identifier" class="openid"><br><a href="[url controller="account" action="openid" /]">[gettext]What is this?[/gettext]</a></p>
-            </form>
+            <p><a href="[url controller="account" action="login" /]">[gettext]Login/Register[/gettext]</a></p>
             [/if]
-            [if condition="user.id"]<p>[gettext]Hello,[/gettext] [c]user.name[/c]. (<a href="[url controller="account" action="logout" /]">[gettext]Logout[/gettext]</a>)</p>[/if]
+            [if condition="user.id"]
+                <p>[gettext]Hello,[/gettext] [c]user.name[/c]. (<a href="[url controller="account" action="logout" /]">[gettext]Logout[/gettext]</a>)</p>
+                [if condition="user.admin"]
+                    <p><a href="[url controller="blog" action="new_post" /]">[gettext]New Post[/gettext]</a></p>
+                    <p><a href="[url controller="blog" action="new_category" /]">[gettext]New Category[/gettext]</a></p>
+                [/if]
+            [/if]
         </div>
-        <div id="title"><a href="[url controller="blog" action="index" /]">[c]config.blog_title[/c]</a></div>
-        <div id="slogan">[c]config.blog_tagline[/c]</div>
+        <div id="title"><a href="[url controller="blog" action="index" /]">That Faltzer Ain't One of Ours</a></div>
+        <div id="slogan">If wishes grew on trees, then life would be a breeze.</div>
     </div>
     <div id="menu">
     <ul>
         <li><a href="[url controller="blog" action="index" /]">[gettext]Home[/gettext]</a></li>
-        <li><a href="#">[gettext]Sites[/gettext]</a>
+        <li><a href="[url controller="blog" action="view" category="sites" /]">[gettext]Sites[/gettext]</a>
             <ul>
                 <li><a href="http://smbz.faltzershq.com/">Super Mario Bros. Z</a></li>
             </ul>
         </li>
-        <li><a href="#">[gettext]Projects[/gettext]</a>
+        <li><a href="[url controller="blog" action="view" category="projects" /]">[gettext]Projects[/gettext]</a>
             <ul>
-                <li><a href="#">Bezarius</a></li>
                 <li><a href="http://mmbnonline.net/">MMBN Online</a></li>
                 <li><a href="[url controller="blog" action="view" category="parasol-boards" /]">Parasol Boards</a></li>
                 <li><a href="http://suitframework.com/">SUIT</a></li>
@@ -56,7 +54,7 @@
         <li><a href="#">[gettext]Categories[/gettext]</a>
             <ul>
                 [loop value="category" iterable="categories"]
-                    <li><a href="[url controller="blog" action="view" category="[c]category.slug[/c]" /]">[c]category.title[/c]</a>
+                    <li><a href="[url controller="blog" action="view" category="[c]category.slug[/c]" /]">[c]category.title[/c]</a></li>
                 [/loop]
             </ul>
         </li>

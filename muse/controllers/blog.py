@@ -1,8 +1,9 @@
 import logging
 
 from pylons import config, request, response, session, tmpl_context as c, url
-from pylons.controllers.util import redirect
+from pylons.controllers.util import abort, redirect
 from pylons.decorators import cache
+import elixir
 from sqlalchemy.orm.exc import NoResultFound
 from recaptcha.client import captcha
 import formencode
@@ -25,25 +26,73 @@ class BlogController(BaseController):
         @cache.beaker_cache(**cache_options)
         def load_posts():
             try:
-                posts = model.Post.get_all()
-                return h.make_posts(posts)
+                return model.Post.get_all()
             except NoResultFound:
                 return
         c.posts = load_posts()
         return render('index.tpl', slacks=True)
 
+    def new_category(self):
+        pass
+
+    def new_post(self):
+        """Writing posts."""
+        if not c.user.admin:
+            abort(403)
+
+        c.category_default = model.Category.query.order_by(
+            model.Category.id.asc()
+        ).first()
+        post_write = render('post_write.tpl', slacks=True)
+
+        if request.environ['REQUEST_METHOD'] != 'POST':
+            return post_write
+
+        try:
+            form = model.forms.Post().to_python(request.POST)
+
+            try:
+                # Make the new category
+                category = model.Category(form['category_title'])
+                elixir.session.add(category)
+                elixir.session.commit()
+                category_id = category.id
+            except KeyError:
+                try:
+                    category_id = form['category_id']
+                except KeyError:
+                    # If all else fails, fallback to the default category.
+                    category_id = c.category_default.id
+
+            post = model.Post(
+                title=form['title'],
+                category_id=category_id,
+                content=form['content'],
+                author_id=c.user.id,
+                slug=form['slug'],
+                summary=form.get('summary', '')
+            )
+            elixir.session.add(post)
+            elixir.session.commit()
+            redirect_url = url(controller='blog', action='view',
+                category=post.category.slug, id=post.slug
+            )
+            redirect(redirect_url)
+        except formencode.validators.Invalid, e:
+            return h.htmlfill(e, form=post_write)
+
     def view(self, category, id=''):
         """Viewing of a post, category or page."""
         @cache.beaker_cache(**cache_options)
         def load_post():
-            post = model.Post.get_by_slug(id, category)
-            comments = h.make_comments(post.comments)
+            post = model.Post.get_by_slug_category(id, category)
+            comments = post.comments
             return [post, comments]
 
         @cache.beaker_cache(**cache_options)
         def load_category():
-            _category = model.Category.get_by_id(category)
-            posts = h.make_posts(_category.posts)
+            _category = model.Category.get_by_slug(category)
+            posts = _category.posts
             return [_category, posts]
 
         # If the ID is not specified, then it's a category.
@@ -57,58 +106,52 @@ class BlogController(BaseController):
                     return render('content/%s.tpl' % (category,), slacks=True)
                 except IOError:
                     # There's no such page!
-                    response.status = '404 Not Found'
-                    return _('Page not found')
+                    abort(404)
             return render('category.tpl', slacks=True)
 
         try:
             c.post, c.comments = load_post()
         except (NoResultFound, AttributeError, ValueError):
-            response.status = '404 Not Found'
-            return _('Post not found')
+            abort(404)
 
-        c.recaptcha_error = ''
         post = render('post.tpl', slacks=True)
 
-        if 'comment_add' in request.POST:
-            remote_ip = h.get_ip()
-            try:
-                if c.user.id:
-                    form = model.forms.CommentUser().to_python(request.params)
-                    # Users do not have to pass any specific information.
-                    comment_kwargs = {'user_id': c.user.id}
-                else:
-                    form = model.forms.Comment().to_python(request.params)
-                    # XXX: Create a FormEncode validator for reCAPTCHA.
-                    recaptcha_resp = captcha.submit(
-                        form['recaptcha_challenge_field'],
-                        form['recaptcha_response_field'],
-                        config.get('recaptcha_private_key', ''),
-                        remote_ip
-                    )
-                    comment_kwargs = {
-                        'email': form['email'],
-                        'url': form['url'],
-                        'name': form['name']
-                    }
-                    if not recaptcha_resp.is_valid:
-                        c.recaptcha_error = (recaptcha_resp.is_valid)
-                        return post
-            except formencode.validators.Invalid, e:
-                return h.htmlfill(e, form=post)
+        if request.environ['REQUEST_METHOD'] != 'POST':
+            return post
 
-            # Because the data that has to be entered varies by
-            # whether or not one is a guest, the best option is for a
-            # kwargs dict to
-            # be passed.
-            comment = model.Comment(c.post.id, form['comment'], ip=remote_ip,
-                **comment_kwargs
-            )
-            model.session.add(comment)
-            model.session.commit()
-            # Redirect the user to the newly posted comment.
-            redirect_url = url(controller='blog', action='view',
-                id=c.post.slug, category=c.post.category.slug
-            )
-            redirect('%s#comment-%s' % (redirect_url, comment.id))
-        return post
+        remote_ip = h.get_ip()
+        try:
+            if c.user.id:
+                form = model.forms.CommentUser().to_python(request.params)
+                # Users do not have to pass any specific information.
+                comment_kwargs = {'user_id': c.user.id}
+            else:
+                form = model.forms.Comment().to_python(request.params)
+                recaptcha_resp = captcha.submit(
+                    form['recaptcha_challenge_field'],
+                    form['recaptcha_response_field'],
+                    config.get('recaptcha.private_key', ''),
+                    remote_ip
+                )
+                comment_kwargs = {
+                    'email': form['email'],
+                    'url': form['url'],
+                    'name': form['name']
+                }
+                if not recaptcha_resp.is_valid:
+                    c.recaptcha_error = (recaptcha_resp.is_valid)
+                    return post
+        except formencode.validators.Invalid, e:
+            return h.htmlfill(e, form=post)
+
+        comment = model.Comment(c.post.id, form['comment'], ip=remote_ip,
+            **comment_kwargs
+        )
+        c.post.comments_count += 1
+        elixir.session.add(comment)
+        elixir.session.commit()
+        # Redirect the user to the newly posted comment.
+        redirect_url = url(controller='blog', action='view',
+            id=c.post.slug, category=c.post.category.slug
+        )
+        redirect('%s#comment-%s' % (redirect_url, comment.id))

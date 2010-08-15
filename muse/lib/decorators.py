@@ -1,5 +1,6 @@
 from decorator import decorator
 from pylons import tmpl_context as c
+from pylons.controllers.util import abort
 
 from muse.lib.base import render
 
@@ -18,7 +19,7 @@ def require(type):
             or (not member and type in ['member', 'admin'])
             or (not admin and type == 'admin')
         ):
-            return render('nopermission.tpl')
+            abort(403)
 
         return func(*args, **kwargs)
     return check

@@ -38,15 +38,8 @@ def load_environment(global_conf, app_conf):
         'sqlalchemy.'
     )
     elixir.metadata.bind = config['pylons.app_globals'].sa_engine
-    model.session = orm.scoped_session(
-        orm.sessionmaker(
-            bind=config['pylons.app_globals'].sa_engine,
-            autoflush=True,
-            autocommit=False,
-            expire_on_commit=True
-        )
-    )
     elixir.setup_all()
+    elixir.session.configure()
 
     # Setup SUIT rules.
     config['suit.rules'] = rules.rules
