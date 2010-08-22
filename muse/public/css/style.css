@@ -560,8 +560,8 @@ MENU
 
 #footer a
 {
-    text-decoration: none;
-    color: #666;
+    text-decoration: underline;
+    color: #444;
 }
 
 div.entries

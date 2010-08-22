@@ -13,7 +13,6 @@ If I wanted to format some text for Markdown syntax, one would go:
     [transform function="convert_text" parser="markdown"]*Roar*[/transform]
 """
 import re
-import htmlentitydefs
 
 from pylons import cache, config, request, response, tmpl_context as c
 from pylons.i18n.translation import ugettext as _
@@ -23,15 +22,13 @@ from formencode import htmlfill as htmlfill_
 from webhelpers.pylonslib import Flash
 from webhelpers.html import escape, HTML, literal, url_escape
 from webhelpers.html.converters import textile, nl2br
+from markupsafe import Markup
 from lxml.html.clean import Cleaner
 import suit
 
 from muse.lib.markdown import markdown
 from muse.lib.templating import render
 
-_char = re.compile(r'&(\w+?);')
-_dec  = re.compile(r'&#(\d{2,4});')
-_hex  = re.compile(r'&#x(\d{2,4});')
 
 flash = Flash()
 
@@ -47,7 +44,7 @@ def convert_text(string, parser=''):
     """
     if not parser:
         parser = config['post.parser']
-    string = unescape(string)
+    string = Markup(string).unescape()
     if parser == 'markdown':
         return markdown.convert(string)
     if parser == 'textile':
@@ -102,23 +99,3 @@ def recaptcha():
     if c.user.id:
         return ''
     return displayhtml(config.get('recaptcha.public_key', ''))
-
-def unescape(string):
-    """Back-replace html-safe sequences to special characters."""
-    def _get_htmlentitydefs(m):
-        try:
-            return htmlentitydefs.entitydefs[m.group(1)]
-        except KeyError:
-            return m.group(0)
-
-    result = _hex.sub(
-        lambda x: unichr(int(x.group(1), 16)),
-        _dec.sub(
-            lambda x: unichr(int(x.group(1))),
-            _char.sub(_get_htmlentitydefs, string)
-        )
-    )
-    if string.__class__ != unicode:
-        return result.encode('utf-8')
-    else:
-        return result

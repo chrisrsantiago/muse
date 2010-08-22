@@ -20,6 +20,7 @@ setup(
         "SUIT>=2.0.1",
         "rulebox>=1.1.0",
         "lxml>=2.2.7",
+        "MarkupSafe>=0.9.2",
         "FormEncode>=1.2.2",
         "recaptcha-client>=1.0.5",
         "python-dateutil>=1.2"
