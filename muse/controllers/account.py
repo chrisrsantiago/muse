@@ -1,29 +1,23 @@
 import logging
 
-from pylons import config, request, response, session, tmpl_context as c, url
+from pylons import config, request, session, tmpl_context as c, url
 from pylons.decorators import rest, validate
 from pylons.controllers.util import abort, redirect
 from routes import request_config
 import elixir
 from sqlalchemy.orm.exc import NoResultFound
-from openid.yadis.discover import DiscoveryFailure
 from openid.consumer.consumer import Consumer
 from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.store.filestore import FileOpenIDStore
 import formencode
 
-from muse.lib.base import _, BaseController, render
+from muse.lib.base import _, BaseController, h, render
 from muse.lib.decorators import require
-from muse.lib import helpers as h
 from muse import model
 
 log = logging.getLogger(__name__)
 
 class AccountController(BaseController):
-    """Most of this is ported from the users controller from Parasol Boards,
-    seeing as both seem to accomplish the same thing.
-    """
-
     openid_store = FileOpenIDStore('/var/tmp')
 
     def index(self):

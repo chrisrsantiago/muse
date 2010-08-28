@@ -1,9 +1,8 @@
+from pylons import config, tmpl_context as c
 from formencode import Schema, FancyValidator
 from formencode.validators import String, Int, Invalid, Email, URL 
-from openid.fetchers import HTTPFetchingError
-from openid.yadis.discover import discover, DiscoveryFailure
 from sqlalchemy.orm.exc import NoResultFound
-from pylons import config, tmpl_context as c
+from pollylons.validators import OpenId
 
 from muse.model import Category, Post as Post_, User
 
@@ -52,15 +51,6 @@ class Username(String):
             pass
         return String._to_python(self, value, c)
 
-
-class OpenId(String):
-    """Verify that the provided URI/XRI is an OpenID."""
-    def _to_python(self, value, c):
-        try:
-            discovery = discover(value)
-        except:
-            raise Invalid('Invalid OpenID', value, c)
-        return String._to_python(self, value, c)
 
 class Post(Schema):
     allow_extra_fields = True

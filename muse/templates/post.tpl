@@ -7,13 +7,13 @@
 [transform function="base"]
     <h2>[c]post.title[/c]</h2>
     <div class="info">
-        <span class="date">[gettext]Posted on[/gettext] <strong>[call function="convert_datetime" date="[c]post.posted[/c]" /]</strong></span>
+        <span class="date">[gettext]Posted on[/gettext] <strong>[call function="convertdate" date="[c]post.posted[/c]" /]</strong></span>
         <span class="author">[c]post.author.name[/c]</span>
         <span class="comment">[c]post.comments_count[/c] [gettext]Comments[/gettext]</span>
     </div>
 
     <div class="text">
-        [transform function="convert_text"][c]post.content[/c][/transform]
+        [transform function="converttext"][c]post.content[/c][/transform]
     </div>
 
     <h3 class="comments-header">[gettext]Their two-cents[/gettext]</h3>
@@ -37,9 +37,9 @@
                 <div class="comment" id="comment-[c]comment.id[/c]">
                     <h4>[c entities='false']comment_gravatar[/c][c entities='false']comment_user[/c] [gettext]says:[/gettext]</h4>
                     <div class="contents">
-                        [transform function="convert_text" parser="markdown"][c]comment.content[/c][/transform]
+                        [transform function="converttext" parser="markdown"][c]comment.content[/c][/transform]
                     </div>
-                    <div class="posted">[gettext]Posted on[/gettext] <strong>[call function="convert_datetime" date="[c]comment.posted[/c]" /]</strong></div>
+                    <div class="posted">[gettext]Posted on[/gettext] <strong>[call function="convertdate" date="[c]comment.posted[/c]" /]</strong></div>
                 </div>
             [/loop]
         [/if]

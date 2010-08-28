@@ -9,5 +9,5 @@
                     [c]post.summary[/c]
                 [/if]
             </p>
-            <p class="posted">Posted on [call function="convert_datetime" date="[c]post.posted[/c]" /]</p>
+            <p class="posted">Posted on [call function="convertdate" date="[c]post.posted[/c]" /]</p>
     </div>

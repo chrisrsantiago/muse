@@ -1,6 +1,6 @@
 import logging
 
-from pylons import config, request, response, session, tmpl_context as c, url
+from pylons import config, request, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 from pylons.decorators import cache
 import elixir
@@ -8,8 +8,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from recaptcha.client import captcha
 import formencode
 
-from muse.lib import helpers as h
-from muse.lib.base import _, BaseController, render
+from muse.lib.base import _, BaseController, h, render
 from muse import model
 
 log = logging.getLogger(__name__)
@@ -119,7 +118,7 @@ class BlogController(BaseController):
         if request.environ['REQUEST_METHOD'] != 'POST':
             return post
 
-        remote_ip = h.get_ip()
+        remote_ip = h.getip()
         try:
             if c.user.id:
                 form = model.forms.CommentUser().to_python(request.params)
