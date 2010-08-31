@@ -27,7 +27,7 @@ except ImportError:
 
 setup(
     name='muse',
-    version='0.1',
+    version='1.0',
     description='personal blogging engine',
     author='Faltzer (Chris Santiago)',
     author_email='faltzerr@aol.com',
@@ -39,15 +39,11 @@ setup(
         "python-openid>=2.2.5",
         "SUIT>=2.0.1",
         "rulebox>=1.1.0",
-        "phanpy>=1.0.0"
-        "lxml>=2.2.7",
-        "MarkupSafe>=0.9.2",
+        "phanpy>=1.0.1",
         "FormEncode>=1.2.2",
-        "recaptcha-client>=1.0.5",
-        "python-dateutil>=1.5",
-        "phanpy>=1.0.0"
+        "recaptcha-client>=1.0.5"
     ],
-    setup_requires=["PasteScript>=1.6.3"],
+    setup_requires=["PasteScript>=1.7.3"],
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
     test_suite='nose.collector',

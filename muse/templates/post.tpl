@@ -47,7 +47,7 @@
         <p class="nocomments">[gettext]There were no comments made for this post.  Be a leader and make one![/gettext]</p>
         [/if]
 
-        <h3 class="comments-header">[gettext]Add Yours[/gettext]</h3>
+        <h3 class="comments-header" id="respond">[gettext]Add Yours[/gettext]</h3>
         [try]
             [if condition="recaptcha_error"]
                 <div class="error">[gettext]reCAPTCHA answer is invalid.[/gettext]</div>
@@ -65,7 +65,6 @@
                     <label for="url" class="url">[gettext]Website[/gettext]</label></p>
                 <p><input type="text" name="email" id="email" size="22">
                     <label for="email" class="email">[gettext]Email[/gettext]</label></p>
-                <p class="openid-prompt"></p>
             [/if]
             <p><textarea name="comment" id="comment" rows="10" cols="60"></textarea></p>
             [call function="recaptcha" /]

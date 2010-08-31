@@ -126,7 +126,7 @@ sup, sub
     line-height: 0;
 }
 
-abbr, acronym
+abbr
 {
     border-bottom: 1px dotted #666;
 }
@@ -157,7 +157,7 @@ pre, code, tt
     margin: 0 1.5em;
 }
 
-.contetnt ul, ol
+#content ul, ol
 {
     margin: 0 1.5em 1.5em;
 }
@@ -259,7 +259,7 @@ input[type='submit']
 {
     border: 1px solid #222;
     height: 25px;
-    width: 50px;
+    padding: 5px;
 }
 
 input#openid_identifier

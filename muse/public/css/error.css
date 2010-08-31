@@ -1,0 +1,25 @@
+body
+{
+    font-family: Georgia;
+    font-size: 0.9em;
+    color: #222;
+}
+
+a
+{
+    color: #333;
+    font-weight: bold;
+}
+
+#content
+{
+    margin: auto;
+    border: 4px solid #222;
+    width: 60%;
+    padding: 5px;
+}
+
+#content p
+{
+    margin-left: 20px;
+}

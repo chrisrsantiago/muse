@@ -6,7 +6,7 @@
     [try]<meta name="description" content="[c]meta_description[/c]">[/try]
 
     <title>[c]title[/c] | That Faltzer Ain't One of Ours</title>
-    <link rel="alternate" type="application/atom+xml" href="[url controller="blog" action="index" rss="true" /]" /
+    <link rel="alternate" type="application/atom+xml" href="[url controller="blog" action="index" rss="true" /]">
     <link href="http://fonts.googleapis.com/css?family=Molengo" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" href="/css/style.css">
 </head>
