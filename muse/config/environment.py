@@ -3,14 +3,13 @@ import os
 
 import pylons
 from pylons.configuration import PylonsConfig
-import elixir
 from sqlalchemy import engine_from_config, orm
 
 from muse.config.routing import make_map
 import muse.lib.app_globals as app_globals
+import muse.model as model
 import muse.lib.helpers
 import muse.lib.rules as rules
-import muse.model as model
 
 def load_environment(global_conf, app_conf):
     """Configure the Pylons environment via the ``pylons.config``
@@ -37,9 +36,7 @@ def load_environment(global_conf, app_conf):
     config['pylons.app_globals'].sa_engine = engine_from_config(config,
         'sqlalchemy.'
     )
-    elixir.metadata.bind = config['pylons.app_globals'].sa_engine
-    elixir.setup_all()
-    elixir.session.configure()
+    model.init_model(config['pylons.app_globals'].sa_engine)
 
     # Setup SUIT rules.
     config['suit.rules'] = rules.rules

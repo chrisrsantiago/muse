@@ -27,7 +27,6 @@ from pylons.controllers import WSGIController
 from pylons.decorators import cache
 from pylons.i18n import get_lang, set_lang
 from pylons.i18n.translation import ugettext as _
-import elixir
 from sqlalchemy.orm.exc import NoResultFound
 from phanpy.templating import render
 
@@ -40,12 +39,12 @@ class BaseController(WSGIController):
     def __before__(self):
         @cache.beaker_cache(expire=3600 * 24, invalidate_on_startup=True)
         def get_categories():
-            return model.Category.query.all()
+            return model.Category.all()
 
         @cache.beaker_cache(expire=3600 * 24, invalidate_on_startup=True)
         def get_user():
             try:
-                return model.User.get_by_id(session['userid'])
+                return model.User.by_id(session['userid'])
             except (KeyError, NoResultFound):
                 try:
                     del session['userid']
@@ -68,4 +67,4 @@ class BaseController(WSGIController):
         try:
             return WSGIController.__call__(self, environ, start_response)
         finally:
-            elixir.session.remove()
+            model.session.remove()

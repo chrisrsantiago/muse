@@ -3,7 +3,6 @@ import logging
 from pylons import config, request, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 from pylons.decorators import cache
-import elixir
 from sqlalchemy.orm.exc import NoResultFound
 from recaptcha.client import captcha
 import formencode
@@ -25,7 +24,7 @@ class BlogController(BaseController):
         @cache.beaker_cache(**cache_options)
         def load_posts():
             try:
-                return model.Post.get_all()
+                return model.Post.all()
             except NoResultFound:
                 return
         c.posts = load_posts()
@@ -39,9 +38,7 @@ class BlogController(BaseController):
         if not c.user.admin:
             abort(403)
 
-        c.category_default = model.Category.query.order_by(
-            model.Category.id.asc()
-        ).first()
+        c.category_default = model.Category.first()
         post_write = render('post_write.tpl', slacks=True)
 
         if request.environ['REQUEST_METHOD'] != 'POST':
@@ -53,8 +50,8 @@ class BlogController(BaseController):
             try:
                 # Make the new category
                 category = model.Category(form['category_title'])
-                elixir.session.add(category)
-                elixir.session.commit()
+                model.session.add(category)
+                model.session.commit()
                 category_id = category.id
             except KeyError:
                 try:
@@ -71,8 +68,8 @@ class BlogController(BaseController):
                 slug=form['slug'],
                 summary=form.get('summary', '')
             )
-            elixir.session.add(post)
-            elixir.session.commit()
+            model.session.add(post)
+            model.session.commit()
             redirect_url = url(controller='blog', action='view',
                 category=post.category.slug, id=post.slug
             )
@@ -84,13 +81,13 @@ class BlogController(BaseController):
         """Viewing of a post, category or page."""
         @cache.beaker_cache(**cache_options)
         def load_post():
-            post = model.Post.get_by_slug_category(id, category)
+            post = model.Post.by_slug_category(id, category)
             comments = post.comments
             return [post, comments]
 
         @cache.beaker_cache(**cache_options)
         def load_category():
-            _category = model.Category.get_by_slug(category)
+            _category = model.Category.by_slug(category)
             posts = _category.posts
             return [_category, posts]
 
@@ -147,8 +144,8 @@ class BlogController(BaseController):
             **comment_kwargs
         )
         c.post.comments_count += 1
-        elixir.session.add(comment)
-        elixir.session.commit()
+        model.session.add(comment)
+        model.session.commit()
         # Redirect the user to the newly posted comment.
         redirect_url = url(controller='blog', action='view',
             id=c.post.slug, category=c.post.category.slug

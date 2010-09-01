@@ -8,7 +8,7 @@
     <h2>[c]post.title[/c]</h2>
     <div class="info">
         <span class="date">[gettext]Posted on[/gettext] <strong>[call function="convertdate" date="[c]post.posted[/c]" /]</strong></span>
-        <span class="author">[c]post.author.name[/c]</span>
+        <span class="author">[c]post.user.name[/c]</span>
         <span class="comment">[c]post.comments_count[/c] [gettext]Comments[/gettext]</span>
     </div>
 

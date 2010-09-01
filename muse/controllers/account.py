@@ -4,7 +4,6 @@ from pylons import config, request, session, tmpl_context as c, url
 from pylons.decorators import rest, validate
 from pylons.controllers.util import abort, redirect
 from routes import request_config
-import elixir
 from sqlalchemy.orm.exc import NoResultFound
 from openid.consumer.consumer import Consumer
 from openid.extensions.sreg import SRegRequest, SRegResponse
@@ -69,7 +68,7 @@ class AccountController(BaseController):
         if result.status != 'success':
             return _('An error ocurred with login.')
         try:
-            user = model.User.get_by_identifier(result.identity_url)
+            user = model.User.by_identifier(result.identity_url)
             session['userid'] = user.id
         except (AttributeError, NoResultFound):
             # No previous login record for the user.
@@ -86,8 +85,8 @@ class AccountController(BaseController):
             user = model.User(name=name, identifier=result.identity_url,
                 email=email
             )
-            elixir.session.add(user)
-            elixir.session.commit()
+            model.session.add(user)
+            model.session.commit()
             session['userid'] = user.id
         session.save()
         redirect_url = session.get('redirect_url',

@@ -1,60 +1,67 @@
 import datetime
 
-from elixir import *
-from sqlalchemy import and_
+from sqlalchemy import and_, Column, ForeignKey
+from sqlalchemy.orm import exc, relation
+from sqlalchemy.types import Boolean, DateTime, Integer, Unicode, UnicodeText
+from phanpy.helpers import slug as slug_
 
-from muse.lib import helpers as h
+from muse.model import BaseTable, session
 
 __all__ = ['Category', 'Comment', 'Guest', 'Post', 'User']
 
-class Category(Entity):
-    using_options(tablename='categories')
-    has_many('posts', of_kind='Post')
+class Category(BaseTable):
+    __tablename__ = 'categories'
 
-    id = Field(Integer(10), primary_key=True)
-    title = Field(Unicode(255))
-    slug = Field(Unicode(255), unique=True)
+    id = Column(Integer(10), primary_key=True)
+    title = Column(Unicode(255))
+    slug = Column(Unicode(255), unique=True)
+    posts = relation('Post')
 
     def __init__(self, title, slug=''):
         self.title = title
-        self.slug = h.generate_slug(slug)
+        self.slug = slug_(slug)
         if not self.slug:
             # Automatically generate a slug (URL) from the title if there was
             # none supplied.
-            self.slug = h.generate_slug(self.title)
+            self.slug = slug_(self.title)
 
     def __repr__(self):
         return '<Category: %s - %s>' % (self.title, self.slug)
 
     @classmethod
-    def get_all(self):
-        categories = Category.query.all()
-        return categories
+    def all(self):
+        q = session.query(Category)
+        return q.all()
 
     @classmethod
-    def get_by_id(self, id):
-        category = Category.query.filter(Category.id == id).one()
-        return category
+    def by_id(self, id):
+        q = session.query(Category).filter(Category.id == id)
+        return q.one()
 
     @classmethod
-    def get_by_slug(self, category):
-        category = Category.query.filter(
-            Category.slug == h.generate_slug(category)
-        ).one()
-        return category
+    def by_slug(self, category):
+        q = session.query(Category).filter(Category.slug == slug_(category))
+        return q.one()
 
-class Comment(Entity):
-    using_options(tablename='comments')
-    belongs_to('post', of_kind='Post')
-    belongs_to('user', of_kind='User')
+    @classmethod
+    def first(self):
+        q = session.query(Category).order_by(Category.id.asc()).limit(1)
+        return q.one()
 
-    id = Field(Integer(10), primary_key=True)
-    name = Field(Unicode(200), nullable=True)
-    email = Field(Unicode(255), nullable=True)
-    url = Field(Unicode(255), nullable=True)
-    content = Field(UnicodeText)
-    ip = Field(Unicode(16))
-    posted = Field(Date, default=datetime.datetime.now)
+class Comment(BaseTable):
+    __tablename__ = 'comments'
+
+    id = Column(Integer(10), primary_key=True)
+    name = Column(Unicode(255), nullable=True)
+    email = Column(Unicode(255), nullable=True)
+    url = Column(Unicode(255), nullable=True)
+    content = Column(UnicodeText)
+    post_id = Column(Integer(10), ForeignKey('posts.id'))
+    post = relation('Post', primaryjoin='Comment.post_id == Post.id')
+    user_id = Column(Integer(10), ForeignKey('users.id'))
+    user = relation('User', primaryjoin='User.id == Comment.user_id')
+    ip = Column(Unicode(16))
+    posted = Column(DateTime, default=datetime.datetime.now)
 
     def __init__(self, post_id, content, ip, **kwargs):
         self.post_id = post_id
@@ -66,75 +73,79 @@ class Comment(Entity):
         self.url = kwargs.get('url', '')
 
     def __repr__(self):
-        return '<Comment: #%d - by %s>' % (self.id, self.name)
+        try:
+            name = self.user.name
+        except AttributeError:
+            name = self.name
+        return '<Comment: #%d - by %s>' % (self.id, name)
 
 
 class Guest(object):
     id = 0
-    name = 'Anonymous'
     admin = 0
+    name = u'Anonymous'
 
 
-class Post(Entity):
-    using_options(tablename='posts')
-    has_many('comments', of_kind='Comment', order_by=['id', 'posted'])
-    belongs_to('author', of_kind='User')
-    belongs_to('category', of_kind='Category')
+class Post(BaseTable):
+    __tablename__ = 'posts'
 
-    id = Field(Integer(10), primary_key=True)
-    title = Field(Unicode(255))
-    content = Field(UnicodeText)
-    posted = Field(Date, default=datetime.datetime.now)
-    slug = Field(Unicode(255), unique=True)
-    summary = Field(UnicodeText, nullable=True)
-    comments_count = Field(Integer(10), nullable=True, default=0)
+    id = Column(Integer(10), primary_key=True)
+    title = Column(Unicode(255))
+    content = Column(UnicodeText)
+    summary = Column(UnicodeText, nullable=True)
+    slug = Column(Unicode(255), unique=True)
+    category_id = Column(Integer(10), ForeignKey('categories.id'))
+    category = relation('Category')
+    user_id = Column(Integer(10), ForeignKey('users.id'))
+    user = relation('User')
+    posted = Column(DateTime, default=datetime.datetime.now)
+    comments = relation('Comment', order_by=['id'])
+    comments_count = Column(Integer(10), nullable=True, default=0)
 
-    def __init__(self, title, category_id, content, author_id, **kwargs):
+    def __init__(self, title, category_id, content, user_id, **kwargs):
         self.title = title
         self.category_id = category_id
         self.content = content
-        self.author_id = author_id
-        self.slug = h.generate_slug(kwargs.get('slug', ''))
+        self.user_id = user_id
+        self.slug = slug_(kwargs.get('slug', ''))
         if not self.slug:
             # Automatically generate a slug (URL) from the title if there was
             # none supplied.
-            self.slug = h.generate_slug(self.title)
+            self.slug = slug_(self.title)
         self.summary = kwargs.get('summary', '')
 
     def __repr__(self):
-        return '<Post: "%s" by %s>' % (self.title, self.author.name)
+        return '<Post: "%s" by %s>' % (self.title, self.user.name)
 
     @classmethod
-    def get_all(self):
-        posts = Post.query.order_by(Post.posted.desc()).all()
+    def all(self):
+        posts = session.query(Post).order_by(Post.posted.desc()).all()
         return posts
 
     @classmethod
-    def get_by_slug(self, slug):
-        post = Post.query.filter(
-            and_(Post.slug == h.generate_slug(slug))
-        ).one()
+    def by_slug(self, slug):
+        post = session.query(Post).filter(Post.slug == slug_(slug)).one()
         post.comments_count = len(post.comments)
         return post
 
     @classmethod
-    def get_by_slug_category(self, slug, category):
-        post = Post.query.filter(
-            and_(Post.slug == h.generate_slug(slug), Category.slug == category)
+    def by_slug_category(self, slug, category):
+        post = session.query(Post).filter(
+            and_(Post.slug == slug_(slug), Category.slug == category)
         ).one()
         post.comments_count = len(post.comments)
         return post
 
-class User(Entity):
-    using_options(tablename='users')
-    has_many('comments', of_kind='Comment')
-    has_many('posts', of_kind='Post')
+class User(BaseTable):
+    __tablename__ = 'users'
 
-    id = Field(Integer(10), primary_key=True)
-    name = Field(Unicode(255))
-    email = Field(Unicode(255))
-    identifier = Field(Unicode(255), unique=True)
-    admin = Field(Boolean)
+    id = Column(Integer(10), primary_key=True)
+    name = Column(Unicode(255))
+    email = Column(Unicode(255))
+    identifier = Column(Unicode(255), unique=True)
+    admin = Column(Boolean)
+    comments = relation('Comment')
+    posts = relation('Post')
 
     def __init__(self, name, identifier, email='', admin=0):
         self.name = name
@@ -146,16 +157,16 @@ class User(Entity):
         return '<User: %s - %s>' % (self.name, self.identifier)
 
     @classmethod
-    def get_by_name(self, identifier):
-        user = User.query.filter(User.name == value).one()
-        return user
+    def by_name(self, identifier):
+        q = session.query(User).filter(User.name == value)
+        return q.one()
 
     @classmethod
-    def get_by_identifier(self, identifier):
-        user = User.query.filter(User.identifier == identifier).one()
-        return user
+    def by_id(self, id):
+        q = session.query(User).filter(User.id == id)
+        return q.one()
 
     @classmethod
-    def get_by_id(self, id):
-        user = User.query.filter(User.id == id).one()
-        return user
+    def by_identifier(self, identifier):
+        q = session.query(User).filter(User.identifier == identifier)
+        return q.one()

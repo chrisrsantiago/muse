@@ -2,7 +2,7 @@ from pylons import config, tmpl_context as c
 from formencode import Schema, FancyValidator
 from formencode.validators import String, Int, Invalid, Email, URL 
 from sqlalchemy.orm.exc import NoResultFound
-from pollylons.validators import OpenId
+from phanpy.validators import OpenId
 
 from muse.model import Category, Post as Post_, User
 
@@ -11,7 +11,7 @@ class CategoryId(Int):
     """Checks against the database to verify that a category exists."""
     def _to_python(self, value, c):
         try:
-            category = Category.get_by_id(value)
+            category = Category.by_id(value)
         except NoResultFound:
             raise Invalid(_('Category does not exist'), value, c)
         return Int._to_python(self, value, c)
@@ -21,7 +21,7 @@ class CategoryTitle(String):
     """Checks against the database to verify that a category doesn't exist."""
     def _to_python(self, value, c):
         try:
-            category = Category.get_by_slug(value)
+            category = Category.by_slug(value)
             raise Invalid(
                 _('There is already a category with that name.'), value, c
             )
@@ -34,7 +34,7 @@ class PostSlug(String):
     """Checks against the database to verify that a slug is not taken."""
     def _to_python(self, value, c):
         try:
-            user = Post_.get_by_slug(value)
+            user = Post_.by_slug(value)
             raise Invalid('Slug already in use.', value, c)
         except NoResultFound:
             pass
@@ -45,7 +45,7 @@ class Username(String):
     """Checks against the database to verify that a username is not taken."""
     def _to_python(self, value, c):
         try:
-            user = User.get_by_name(value)
+            user = User.by_name(value)
             raise Invalid('Username Taken', value, c)
         except NoResultFound:
             pass
