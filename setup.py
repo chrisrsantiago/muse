@@ -38,9 +38,11 @@ setup(
         'python-openid>=2.2.5',
         'SUIT>=2.0.1',
         'rulebox>=1.1.0',
-        'phanpy>=1.0.1',
+        'phanpy>=1.1.0',
         'FormEncode>=1.2.2',
-        'recaptcha-client>=1.0.5'
+        'pygeoip>=0.1.3',
+        'recaptcha-client>=1.0.5',
+        'whoosh>=1.0.0b11'
     ],
     setup_requires=['PasteScript>=1.7.3'],
     packages=find_packages(exclude=['ez_setup']),

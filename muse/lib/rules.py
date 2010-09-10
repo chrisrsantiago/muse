@@ -26,7 +26,7 @@ from muse.lib.base import h
 __all__ = ['rules']
 
 rules = dict(suitlons.rules.copy(), **phanpy.copy())
-# Make sure [call] and [transform] use our helpers.
+# Make sure [call /] and [transform] use our helpers.
 rules['[call'] = rules['[call'].copy()
 rules['[call']['var']['var']['owner'] = h
 rules['[transform]'] = rules['[transform]'].copy()

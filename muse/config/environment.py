@@ -31,13 +31,17 @@ def load_environment(global_conf, app_conf):
 
     # Setup cache object as early as possible
     pylons.cache._push_object(config['pylons.app_globals'].cache)
-
-    # Setup SQLAlchemy + Elixir
+    # Setup cache options dict to pass to @cache.beaker_cache.
+    config['cache_options'] = {
+        'query_args': True,
+        'expire': config.get('cache_expire', 3600),
+        'invalidate_on_startup': True
+    }
+    # Setup SQLAlchemy
     config['pylons.app_globals'].sa_engine = engine_from_config(config,
         'sqlalchemy.'
     )
     model.init_model(config['pylons.app_globals'].sa_engine)
-
     # Setup SUIT rules.
     config['suit.rules'] = rules.rules
 

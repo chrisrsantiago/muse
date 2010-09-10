@@ -3,7 +3,7 @@ import datetime
 from sqlalchemy import and_, Column, ForeignKey
 from sqlalchemy.orm import exc, relation
 from sqlalchemy.types import Boolean, DateTime, Integer, Unicode, UnicodeText
-from phanpy.helpers import slug as slug_
+from phanpy.helpers import getip, slug as slug_
 
 from muse.model import BaseTable, session
 
@@ -36,12 +36,12 @@ class Category(BaseTable):
     @classmethod
     def by_id(self, id):
         q = session.query(Category).filter(Category.id == id)
-        return q.one()
+        return q
 
     @classmethod
     def by_slug(self, category):
         q = session.query(Category).filter(Category.slug == slug_(category))
-        return q.one()
+        return q
 
     @classmethod
     def first(self):
@@ -78,6 +78,21 @@ class Comment(BaseTable):
         except AttributeError:
             name = self.name
         return '<Comment: #%d - by %s>' % (self.id, name)
+
+    @classmethod
+    def by_id(self, id):
+        q = session.query(Comment).filter(Comment.id == id)
+        return q
+
+    @classmethod
+    def by_post(self, id):
+        q = session.query(Comment).filter(Comment.post_id == id)
+        return q
+
+    @classmethod
+    def by_user(self, id):
+        q = session.query(User).filter(User.id == id)
+        return q
 
 
 class Guest(object):
@@ -119,54 +134,76 @@ class Post(BaseTable):
 
     @classmethod
     def all(self):
-        posts = session.query(Post).order_by(Post.posted.desc()).all()
-        return posts
+        q = session.query(Post).order_by(Post.posted.desc())
+        return q.all()
+
+    @classmethod
+    def by_id(self, id):
+        q = session.query(Post).filter(Post.id == id)
+        return q
 
     @classmethod
     def by_slug(self, slug):
-        post = session.query(Post).filter(Post.slug == slug_(slug)).one()
-        post.comments_count = len(post.comments)
-        return post
+        q = session.query(Post).filter(Post.slug == slug_(slug))
+        return q
 
     @classmethod
     def by_slug_category(self, slug, category):
-        post = session.query(Post).filter(
+        q = session.query(Post).filter(
             and_(Post.slug == slug_(slug), Category.slug == category)
-        ).one()
-        post.comments_count = len(post.comments)
-        return post
+        )
+        return q
+
+    @classmethod
+    def by_user(self, id):
+        q = session.query(Post).filter(Post.user_id == id)
+        return q
 
 class User(BaseTable):
     __tablename__ = 'users'
 
     id = Column(Integer(10), primary_key=True)
     name = Column(Unicode(255))
-    email = Column(Unicode(255))
     identifier = Column(Unicode(255), unique=True)
+    email = Column(Unicode(255))
+    website = Column(Unicode(255))
     admin = Column(Boolean)
-    comments = relation('Comment')
+    ip = Column(Unicode(16))
+    comments = relation('Comment', order_by=Comment.id.desc())
     posts = relation('Post')
 
-    def __init__(self, name, identifier, email='', admin=0):
+    def __init__(self, name, identifier, email='', website='', admin=0):
         self.name = name
-        self.email = email
         self.identifier = identifier
+        self.email = email
+        self.website = website
         self.admin = admin
+        self.ip = getip()
 
     def __repr__(self):
         return '<User: %s - %s>' % (self.name, self.identifier)
 
     @classmethod
-    def by_name(self, identifier):
-        q = session.query(User).filter(User.name == value)
-        return q.one()
+    def all(self):
+        q = session.query(User).order_by(User.id.asc())
+        return q.all()
 
     @classmethod
     def by_id(self, id):
         q = session.query(User).filter(User.id == id)
-        return q.one()
+        return q
 
     @classmethod
     def by_identifier(self, identifier):
         q = session.query(User).filter(User.identifier == identifier)
+        return q
+
+    @classmethod
+    def by_name(self, name):
+        q = session.query(User).filter(User.name == name)
+        return q
+
+    @classmethod
+    def first(self):
+        q = session.query(User).order_by(User.id.asc()).limit(1)
         return q.one()

@@ -17,15 +17,24 @@ def make_map(config):
     map.connect('/error/{action}/{id}', controller='error')
 
     map.connect('/', controller='blog', action='index')
+    map.connect('/rss', controller='blog', action='index', rss='true')
     map.connect('/new-post', controller='blog', action='new_post')
-    map.connect('/new-category', controller='blog', action='new_category')
-    map.connect('/account/{action}', controller='account')
+    map.connect('/login', controller='account', action='login')
+    map.connect('/login_complete', controller='account', action='login_complete')
+    map.connect('/logout', controller='account', action='logout')
+    map.connect('/profile', controller='account', action='profile')
+    map.connect('/profile/{id:\d+}', controller='account', action='profile')
+    map.connect('/profile/{id:\d+}/edit', controller='account', action='profile',
+        edit='true'
+    )
     map.connect('/{category}', controller='blog', action='view')
-    map.connect('/{category}/{id}', controller='blog', action='view')
-
-    # Remove forward-slashes from URLs.
-    redirect_kwargs = dict(_redirect_code='301 Moved Permanently')
-    map.redirect('/account/{action}/', '/account/{action}', **redirect_kwargs)
-    map.redirect('/{category}/', '/{category}', **redirect_kwargs)
-    map.redirect('/{category}/{id}/', '/{category}/{id}', **redirect_kwargs)
+    map.connect('/{category}/{slug}', controller='blog', action='view')
+    map.connect('/{category}/{slug}/edit', controller='blog', action='view',
+        edit='true'
+    )
+    map.connect(
+        '/{category}/{slug}/edit-comment/{edit_comment:\d+}',
+        controller='blog',
+        action='view'
+    )
     return map

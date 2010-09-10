@@ -19,11 +19,60 @@
 # THE SOFTWARE.
 
 """Helper functions"""
+import json
 
-from pylons import config, tmpl_context as c
+from pylons import config, tmpl_context as c, url
 from recaptcha.client.captcha import displayhtml
-from phanpy.helpers import (base, convertdate, converttext, getip, htmlfill,
-    slug)
+from webhelpers.pylonslib import Flash
+from phanpy.helpers import (base, convertdate, converttext, getip,
+    htmlencode, htmlfill, slug
+)
+
+flash = Flash()
+
+def breadcrumbs():
+    """Prepares breadcrumbs for inclusion in page."""
+    c.breadcrumbs.append({
+        'title': c.title,
+        'url': ''
+    })
+    # Simulate a prepend by reversing the breadcrumb list to add site title and
+    # index link, then reverse again.
+    c.breadcrumbs.reverse()
+    c.breadcrumbs.append({
+        'title': c.blog_title,
+        'url': c.blog_index
+    })
+    c.breadcrumbs.reverse()
+
+    return ''
+
+def comment_canedit(user_id):
+    """Template helper; returns whether or not the current user is allowed
+    to edit the comment.
+    """
+    if not c.user.id:
+        return 'false'
+
+    if c.user.id == user_id or c.user.admin:
+        return 'true'
+
+    return 'false'
+
+def comment_editing(comment_id):
+    """Template helper; returns whether or not the current comment is being
+    edited.
+    """
+    if c.editing_comment == comment_id:
+        return 'true'
+    return 'false'
+
+def flash_pop():
+    """Grabs from the flash message stack so it can be looped through
+    templating.
+    """
+    c._flash = flash.pop_messages()
+    return ''
 
 def recaptcha():
     """Display reCaptcha only if the user is not identified."""

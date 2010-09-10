@@ -17,12 +17,8 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-import cgi
 
-from paste.urlparser import PkgResourcesParser
 from pylons import request, tmpl_context as c
-from pylons.controllers.util import forward
-from webhelpers.html.builder import literal
 
 from muse.lib.base import BaseController, render
 
@@ -41,7 +37,6 @@ class ErrorController(BaseController):
     def document(self):
         """Render the error document"""
         resp = request.environ.get('pylons.original_response')
-        c.message = request.GET.get('message', '')
-        c.code = cgi.escape(request.GET.get('code', str(resp.status_int)))
-        c.prefix = request.environ.get('SCRIPT_NAME', '')
+        c.message = resp.status
+        c.code = str(resp.status_int)
         return render('error/%s.tpl' % (c.code,), slacks=True)

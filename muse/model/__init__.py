@@ -9,12 +9,10 @@ session = scoped_session(sessionmaker(autoflush=True, autocommit=False))
 BaseTable = declarative_base(metadata=metadata)
 
 def init_model(sa_engine, create_tables=False):
-    """Call me before using any of the tables or classes in the model."""
+    """Initialize all model objects so that they can be used."""
     session.configure(bind=sa_engine)
     metadata.bind = sa_engine
     engine = sa_engine
-    if create_tables:
-        BaseTable.metadata.create_all(engine)
 
 from muse.model.entities import Category, Comment, Guest, Post, User
-from muse.model import forms
+from muse.model import forms, whoosh

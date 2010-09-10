@@ -10,7 +10,7 @@
 
     <p>Were you expecting a download link?  If you were, then I'm sorry to disappoint.  Parasol Boards hasn't met my standard for stable software; until then, if you want to use or play around with Parasol Boards, you're going to have to <a href="http://git-scm.com/download">download and install git</a>, then run the command below to download the latest code:</p>
 
-    <code>git clone git://gitorious.org/parasol-boards/parasol-boards.git</code>
+    <code>git clone git://github.com/faltzer/parasol-boards.git</code>
 
 <h2><a name="philosophy">The Philosophy behind Parasol Boards</a></h2>
     <p>What is the reasoning behind Parasol Boards? What makes Parasol Boards more formiddable software than others such as phpBB, vBulletin, MyBBoard, et all? The answer to this question can be summarized with: Parasol Boards is not the Swiss-army knife for those in search of a do-all forum solution that caters more to the <a href="#generic-structure">generic structure and needs</a> that consumers of forum software have adapted.  If you are looking for a forum that does it all, then Parasol Boards is not for you, unfortunately.</p>

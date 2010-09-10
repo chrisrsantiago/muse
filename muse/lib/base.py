@@ -44,7 +44,7 @@ class BaseController(WSGIController):
         @cache.beaker_cache(expire=3600 * 24, invalidate_on_startup=True)
         def get_user():
             try:
-                return model.User.by_id(session['userid'])
+                return model.User.by_id(session['userid']).one()
             except (KeyError, NoResultFound):
                 try:
                     del session['userid']
@@ -56,6 +56,7 @@ class BaseController(WSGIController):
             set_lang(request.GET['language'])
         except KeyError:
             pass
+        c.breadcrumbs = []
         c.categories = get_categories()
         c.user = get_user()
 
