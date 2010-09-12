@@ -8,6 +8,7 @@ from routes import request_config
 from sqlalchemy.orm.exc import NoResultFound
 from recaptcha.client import captcha
 from formencode.validators import Invalid as FormError
+from whoosh.highlight import highlight, HtmlFormatter, ContextFragmenter
 from whoosh.qparser import MultifieldParser
 from webhelpers.feedgenerator import Atom1Feed
 
@@ -232,7 +233,7 @@ class BlogController(BaseController):
         c.results = []
         if len(c.terms) < 4:
             h.flash(
-                _('Search queries must be at least four characters'),
+                _('Search queries must be at least 4 characters in length.'),
                 'error'
             )
             redirect(url(controller='blog', action='index'))
@@ -243,10 +244,17 @@ class BlogController(BaseController):
         ).parse(c.terms)
         results = index.searcher().search(query, limit=10)
         for result in results:
+            terms = [v for k, v in query.all_terms() if k == 'content']
             url_kwargs = json.loads(result['url'])
             result['url'] = url(**url_kwargs)
+            result['highlights'] = highlight(
+                result['content'],
+                terms,
+                search.schema['content'].format.analyzer,
+                ContextFragmenter(terms),
+                HtmlFormatter(tagname='span', classname='highlight')
+            )
             c.results.append(result)
-
         return render('search.tpl', slacks=True)
 
     def set_category(self, form):

@@ -11,7 +11,7 @@ __all__ = ['build_indexes', 'index', 'schema']
 
 schema = Schema(
     title=TEXT(stored=True),
-    content=TEXT,
+    content=TEXT(stored=True),
     summary=TEXT(stored=True),
     url=TEXT(stored=True),
     category=STORED

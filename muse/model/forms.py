@@ -33,17 +33,6 @@ class CategoryTitle(String):
         return String._to_python(self, value, c)
 
 
-class PostSlug(String):
-    """Checks against the database to verify that a slug is not taken."""
-    def _to_python(self, value, c):
-        try:
-            user = Post_.by_slug(value).one()
-            raise Invalid(_('Slug already in use.'), value, c)
-        except NoResultFound:
-            pass
-        return String._to_python(self, value, c)
-
-
 class Category(Schema):
     allow_extra_fields = True
     filter_extra_fields = True
@@ -77,10 +66,11 @@ class Login(Schema):
 class Post(Schema):
     allow_extra_fields = True
     filter_extra_fields = True
+    delete = StringBoolean(if_missing=False)
     title = String(not_empty=True, strip=True)
     category_id = CategoryId()
     category_title = CategoryTitle()
-    slug = PostSlug()
+    slug = String(not_empty=True, strip=True)
     summary = String()
     content = String(not_empty=True, strip=True)
 
