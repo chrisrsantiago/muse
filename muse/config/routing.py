@@ -18,6 +18,7 @@ def make_map(config):
 
     map.connect('/', controller='blog', action='index')
     map.connect('/rss', controller='blog', action='index', rss='true')
+    map.connect('/search', controller='blog', action='search')
     map.connect('/new-post', controller='blog', action='new_post')
     map.connect('/login', controller='account', action='login')
     map.connect('/login_complete', controller='account', action='login_complete')
@@ -28,6 +29,9 @@ def make_map(config):
         edit='true'
     )
     map.connect('/{category}', controller='blog', action='view')
+    map.connect('/{category}/edit', controller='blog', action='view',
+        edit='true'
+    )
     map.connect('/{category}/{slug}', controller='blog', action='view')
     map.connect('/{category}/{slug}/edit', controller='blog', action='view',
         edit='true'

@@ -138,19 +138,24 @@ class Post(BaseTable):
         return q.all()
 
     @classmethod
+    def by_category(self, id):
+        q = session.query(Post).filter(Post.category_id == id)
+        return q
+
+    @classmethod
     def by_id(self, id):
         q = session.query(Post).filter(Post.id == id)
         return q
 
     @classmethod
     def by_slug(self, slug):
-        q = session.query(Post).filter(Post.slug == slug_(slug))
+        q = session.query(Post).filter(Post.slug == slug)
         return q
 
     @classmethod
     def by_slug_category(self, slug, category):
         q = session.query(Post).filter(
-            and_(Post.slug == slug_(slug), Category.slug == category)
+            and_(Post.slug == slug, Category.slug == category)
         )
         return q
 

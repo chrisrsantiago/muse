@@ -45,11 +45,4 @@ def load_environment(global_conf, app_conf):
     # Setup SUIT rules.
     config['suit.rules'] = rules.rules
 
-    # Allow template and public dirs to be altered on a per-config basis.
-    if 'templates_dir' in config and os.path.exists(config['templates_dir']):
-        config['pylons.paths']['templates'] = config['templates_dir']
-
-    if 'public_dir' in config and os.path.exists(config['public_dir']):
-        config['pylons.paths']['static_files'] = config['public_dir']
-
     return config

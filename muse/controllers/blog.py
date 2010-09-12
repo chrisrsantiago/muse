@@ -1,4 +1,5 @@
 import logging
+import json
 
 from pylons import config, request, response, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
@@ -7,12 +8,16 @@ from routes import request_config
 from sqlalchemy.orm.exc import NoResultFound
 from recaptcha.client import captcha
 from formencode.validators import Invalid as FormError
+from whoosh.qparser import MultifieldParser
 from webhelpers.feedgenerator import Atom1Feed
 
+from muse.lib import search
 from muse.lib.base import _, BaseController, h, render
 from muse import model
 
 log = logging.getLogger(__name__)
+
+index = search.build_indexes()
 
 class BlogController(BaseController):
 
@@ -31,28 +36,31 @@ class BlogController(BaseController):
 
         return render('index.tpl', slacks=True)
 
-    def set_category(self, form):
-        if form['category_title']:
-            category = model.Category(form['category_title'])
-            model.session.add(category)
-            model.session.commit()
-            return category.id
-        else:
-            try:
-                return form['category_id']
-            except KeyError:
-                # If all else fails, fallback to the default category.
-                return c.category_default
-
-    def set_slug(self, form):
+    def edit_category(self):
         try:
-            model.Post.by_slug(form['slug']).one()
-            h.flash(_('Slug already in use.'), 'error')
-            return
-        except NoResultFound:
-            return form['slug']
+            form = model.forms.Category().to_python(request.POST)
+            if form['delete']:
+                posts = model.Post.by_category(c.category.id)
+                for post in posts.all():
+                    model.Comment.by_post(post.id).delete()
+                posts.delete()
+                model.session.commit()
+                h.flash(_('Category deleted successfully.'), 'success')
+                redirect_url = url(controller='blog', action='index')
+            else:
+                c.category.title = form['title']
+                model.session.commit()
+                h.flash(_('Category edited successfully.'), 'success')
+                redirect_url = url(
+                    controller='blog',
+                    action='view',
+                    category=c.category.slug
+                )
+            redirect(redirect_url)
+        except FormError, e:
+            return h.htmlfill(e, form=post)
 
-    def edit_comment(self, comment, post_form):
+    def edit_comment(self, comment, post):
         try:
             form = model.forms.CommentUser().to_python(request.POST)
             if form['delete']:
@@ -68,7 +76,7 @@ class BlogController(BaseController):
                 redirect_url = '%s#comment-%d' % (c.post_url, comment.id)
             redirect(redirect_url)
         except FormError, e:
-            return h.htmlfill(e, form=post_form)
+            return h.htmlfill(e, form=post)
 
     def edit_post(self, post):
         try:
@@ -219,6 +227,49 @@ class BlogController(BaseController):
         response.content_type = 'application/atom+xml'
         return feed.writeString('utf-8')
 
+    def search(self):
+        c.terms = request.GET.get('terms', '')
+        c.results = []
+        if len(c.terms) < 4:
+            h.flash(
+                _('Search queries must be at least four characters'),
+                'error'
+            )
+            redirect(url(controller='blog', action='index'))
+
+        query = MultifieldParser(
+            ['title', 'content', 'summary'],
+            schema=index.schema
+        ).parse(c.terms)
+        results = index.searcher().search(query, limit=10)
+        for result in results:
+            url_kwargs = json.loads(result['url'])
+            result['url'] = url(**url_kwargs)
+            c.results.append(result)
+
+        return render('search.tpl', slacks=True)
+
+    def set_category(self, form):
+        if form['category_title']:
+            category = model.Category(form['category_title'])
+            model.session.add(category)
+            model.session.commit()
+            return category.id
+        else:
+            try:
+                return form['category_id']
+            except KeyError:
+                # If all else fails, fallback to the default category.
+                return c.category_default
+
+    def set_slug(self, form):
+        try:
+            model.Post.by_slug(form['slug']).one()
+            h.flash(_('Slug already in use.'), 'error')
+            return
+        except NoResultFound:
+            return form['slug']
+
     def view(self, category, slug='', edit=False, edit_comment=0):
         """Viewing of a post, category or page."""
         @cache.beaker_cache(**config['cache_options'])
@@ -235,31 +286,48 @@ class BlogController(BaseController):
 
         # If the slug is not specified, then it's a category.
         if not slug:
+            return self.view_category(load_category, category, edit)
+        else:
             try:
-                c.category, c.posts = load_category()
-                c.breadcrumbs.append({
-                    'title': c.category.title,
-                    'url': url(
-                        controller='blog',
-                        action='view',
-                        category=c.category.slug
-                    )
-                })
-            except (NoResultFound, ValueError):
-                # There is no category, so our last option is that it's a
-                # page.
-                try:
-                    return render('content/%s.tpl' % (category,), slacks=True)
-                except IOError:
-                    # There's no such page!
-                    abort(404)
-            return render('category.tpl', slacks=True)
+                c.post, c.comments = load_post()
+            except (NoResultFound, AttributeError, ValueError):
+                abort(404)
+            return self.view_post(edit, edit_comment)
 
+    def view_category(self, load_category, category, edit):
         try:
-            c.post, c.comments = load_post()
-        except (NoResultFound, AttributeError, ValueError):
-            abort(404)
+            c.category, c.posts = load_category()
+            c.breadcrumbs.append({
+                'title': c.category.title,
+                'url': url(
+                    controller='blog',
+                    action='view',
+                    category=c.category.slug
+                )
+            })
 
+            c.editing = False
+            if edit:
+                if not c.user.admin:
+                    abort(403)
+                c.editing = True
+
+            category_view = render('category.tpl', slacks=True)
+
+            if request.environ['REQUEST_METHOD'] != 'POST':
+                return category_view
+
+            return self.edit_category()
+        except (NoResultFound, ValueError):
+            # There is no category, so our last option is that it's a
+            # page.
+            try:
+                return render('content/%s.tpl' % (category,), slacks=True)
+            except IOError:
+                # There's no such page!
+                abort(404)
+
+    def view_post(self, edit, edit_comment):
         c.breadcrumbs.append({
             'title': c.post.category.title,
             'url': url(
@@ -292,6 +360,7 @@ class BlogController(BaseController):
                 abort(403)
             c.category_default = model.Category.first()
             c.editing_post = True
+
         post = render('post.tpl', slacks=True)
 
         if request.environ['REQUEST_METHOD'] != 'POST':
@@ -301,7 +370,7 @@ class BlogController(BaseController):
             return self.edit_post(post)
         elif edit_comment:
             # We're editing a comment right now.
-            return self.edit_comment(comment, post_form=post)
+            return self.edit_comment(comment, post=post)
         else:
             # Allow the posting of comments.
             return self.new_comment(post)

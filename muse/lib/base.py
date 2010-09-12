@@ -22,7 +22,7 @@
 
 Provides the BaseController class for subclassing.
 """
-from pylons import session, request, tmpl_context as c
+from pylons import config, request, session, tmpl_context as c
 from pylons.controllers import WSGIController
 from pylons.decorators import cache
 from pylons.i18n import get_lang, set_lang
@@ -37,11 +37,11 @@ __all__ = ['_', 'BaseController', 'h', 'render']
 
 class BaseController(WSGIController):
     def __before__(self):
-        @cache.beaker_cache(expire=3600 * 24, invalidate_on_startup=True)
+        @cache.beaker_cache(**config['cache_options'])
         def get_categories():
             return model.Category.all()
 
-        @cache.beaker_cache(expire=3600 * 24, invalidate_on_startup=True)
+        @cache.beaker_cache(**config['cache_options'])
         def get_user():
             try:
                 return model.User.by_id(session['userid']).one()

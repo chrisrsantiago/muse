@@ -1,9 +1,9 @@
 [trim]
 [assign var="title"][gettext]Profile:[/gettext] [c]profile.name[/c][/assign]
+[assign var="editurl"][url controller="account" action="profile" id="[c]profile.id[/c]" edit="true" /][/assign]
 [transform function="base"]
-
     [if condition="editing"]
-    <form action="[url controller="account" action="profile" id="[c]profile.id[/c]" edit="true" /]" method="post">
+    <form action="[c]editurl[/c]" method="post">
         [if condition="user.admin"]
         <fieldset>
             <legend>[gettext]Delete User?[/gettext]</legend>
@@ -16,7 +16,7 @@
     [/if]
 
     [if condition="editing" not="true"]
-    <h1>[c]profile.name[/c][if condition="canedit"] (<a href="[url controller="account" action="profile" id="[c]profile.id[/c]" edit="true" /]">[gettext]edit[/gettext]</a>)[/if]</h1>
+    <h1>[c]profile.name[/c][if condition="canedit"] (<a href="[c]editurl[/c]">[gettext]edit[/gettext]</a>)[/if]</h1>
     [/if]
 
     <div id="profile-details">

@@ -14,5 +14,5 @@ def init_model(sa_engine, create_tables=False):
     metadata.bind = sa_engine
     engine = sa_engine
 
-from muse.model.entities import Category, Comment, Guest, Post, User
-from muse.model import forms, whoosh
+from muse.model.tables import Category, Comment, Guest, Post, User
+from muse.model import forms

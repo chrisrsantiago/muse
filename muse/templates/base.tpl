@@ -67,6 +67,11 @@
     </div>
     <div class="clear"></div>
     <div id="content">
+        <form action="[url controller="blog" action="search" /]" method="get">
+            <div id="search">
+                <p><input name="terms" type="text" placeholder="[gettext]Search[/gettext]"[try] value="[c]terms[/c]"[/try]></p>
+            </div>
+        </form>
         <div id="breadcrumb">
             <p>[loop value="crumb" iterable="breadcrumbs" join=" &raquo; "]
                [if condition="crumb.url"]<a href="[c]crumb.url[/c]">[/if][c]crumb.title[/c][if condition="crumb.url"]</a>[/if]
