@@ -13,6 +13,9 @@
             [if condition="result.summary" not="true"]
                 <p>[gettext]No Summary[/gettext]</p>
             [/if]
+            [if condition="result.highlights"]
+                <p>[c entities="false"]result.highlights[/c]</p>
+            [/if]
         [/loop]
     [/if]
 
