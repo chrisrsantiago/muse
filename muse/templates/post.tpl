@@ -11,13 +11,18 @@
         <span class="author"><a href="[url controller="account" action="profile" id="[c]post.user.id[/c]" /]">[c]post.user.name[/c]</a></span>
         <span class="comment"><a href="[c]post_url[/c]#comments">[c]post.comments_count[/c] [gettext]Comments[/gettext]</a></span>
         [if condition="post_canedit"]
-        <span class="edit"><a href="[url controller="blog" action="view" category="[c]post.category.slug[/c]" slug="[c]post.slug[/c]" edit="true" /]">[gettext]Edit[/gettext]</a></span>
+            [if condition="editing_post" not="true"]
+                <span class="edit"><a href="[url current="true" edit="true" /]">[gettext]Edit[/gettext]</a></span>
+            [/if]
+            [if condition="editing_post"]
+                <span class="edit"><a href="[url current="true" edit="true" /]">[gettext]Edit[/gettext]</a></span>
+            [/if]
         [/if]
     </div>
 
     <div class="text">
         [if condition="editing_post"]
-        <form action="[url controller="blog" action="view" category="[c]post.category.slug[/c]" slug="[c]post.slug[/c]" edit="true" /]" method="post">
+        <form action="[url current="true" /]" method="post">
             [assign var="new_post" json="true"]false[/assign]
             [execute][template]post_form.tpl[/template][/execute]
         </form>
@@ -71,6 +76,7 @@
                     <div class="contents">
                         [if condition="comment_editing"]
                         <form action="[c]comment_editurl[/c]" method="post">
+                            [c entities="false"]csrf_token[/c]
                             <p><textarea name="comment">[c]comment.content[/c]</textarea></p>
                             <p><input type="submit" value="[gettext]Save Changes[/gettext]"></p>
                             <p><label for="delete"><input id="delete" name="delete" type="checkbox"> [gettext]Delete this comment?[/gettext]</label></p>
@@ -99,30 +105,25 @@
         <p class="nocomments">[gettext]There were no comments made for this post.  Be a leader and make one![/gettext]</p>
         [/if]
 
+        
         [if condition="editing_post" not="true"]
-        <h3 class="comments-header" id="respond">[gettext]Add Yours[/gettext]</h3>
-        [try]
-            [if condition="recaptcha_error"]
-                <div class="error">[gettext]reCAPTCHA answer is invalid.[/gettext]</div>
-            [/if]
-        [/try]
-
-        <form action="[c]post_url[/c]#respond" method="post">
-            [if condition="user.id"]
-                <p>[gettext]Current Alias:[/gettext] <strong>[c]user.name[/c]</strong></p>
-            [/if]
-            [if condition="user.id" not="true"]
-                <p><input type="text" name="name" id="name" size="22">
-                    <label for="name" class="name">[gettext]Name[/gettext]</label></p>
-                <p><input type="text" name="url" id="url" value="" size="22">
-                    <label for="url" class="url">[gettext]Website[/gettext]</label></p>
-                <p><input type="text" name="email" id="email" size="22">
-                    <label for="email" class="email">[gettext]Email[/gettext]</label></p>
-            [/if]
-            <p><textarea name="comment" id="comment" rows="10" cols="60"></textarea></p>
-            [call function="recaptcha" /]
-            <p><input type="submit" name="comment_add" value="[gettext]Add Comment[/gettext]"></p>
-        </form>
+            <h3 class="comments-header" id="respond">[gettext]Add Yours[/gettext]</h3>
+            <form action="[c]post_url[/c]#respond" method="post">
+                [c entities="false"]csrf_token[/c]
+                [if condition="user.id"]
+                    <p>[gettext]Current Alias:[/gettext] <strong>[c]user.name[/c]</strong></p>
+                [/if]
+                [if condition="user.id" not="true"]
+                    <p><input type="text" name="name" id="name" size="22">
+                        <label for="name" class="name">[gettext]Name[/gettext]</label></p>
+                    <p><input type="text" name="url" id="url" value="" size="22">
+                        <label for="url" class="url">[gettext]Website[/gettext]</label></p>
+                    <p><input type="text" name="email" id="email" size="22">
+                        <label for="email" class="email">[gettext]Email[/gettext]</label></p>
+                [/if]
+                <p><textarea name="comment" id="comment" rows="10" cols="60"></textarea></p>
+                <p><input type="submit" name="comment_add" value="[gettext]Add Comment[/gettext]"></p>
+            </form>
         [/if]
     </div>
 [/transform]

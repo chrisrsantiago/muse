@@ -1,7 +1,7 @@
 [trim]
 [assign var="title"][gettext]Writing a Blog Post[/gettext][/assign]
 [transform function="base"]
-    <form action="[url controller="blog" action="new_post" /]" method="post">
+    <form action="[url current="true" /]" method="post">
         <fieldset id="title">
             <legend>[gettext]Title[/gettext]</legend>
             <p>[gettext]Obviously, enter the title you want to give your blog post.[/gettext]</p>

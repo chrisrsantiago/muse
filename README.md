@@ -1,0 +1,3 @@
+# muse
+
+muse is a personal blogging engine built atop the Pylons web framework, using the SUIT (Scripting Using Integrated Templates) Framework.  This is an incomplete legacy project, therefore there is no official setup nor guarantee that the code still works, however I publish it as-is for anyone who is curious to read the code.  I might pick it up again someday and do one big rewrite, but in the meantime, here it is.

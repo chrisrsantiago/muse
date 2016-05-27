@@ -1,5 +1,4 @@
 [trim]
-[assign var="blog_title"]That Faltzer Ain't One of Ours[/assign]
 [assign var="blog_index"][url controller="blog" action="index" /][/assign]
 [call function="breadcrumbs" /]
 <!DOCTYPE HTML>
@@ -30,31 +29,11 @@
             [/if]
         </div>
         <div id="title"><a href="[c]blog_index[/c]">[c]blog_title[/c]</a></div>
-        <div id="slogan">If wishes grew on trees, then life would be a breeze.</div>
+        <div id="slogan">[c]blog_tagline[/c]</div>
     </div>
     <div id="menu">
     <ul>
         <li><a href="[url controller="blog" action="index" /]">[gettext]Home[/gettext]</a></li>
-        <li><a href="[url controller="blog" action="view" category="sites" /]">[gettext]Sites[/gettext]</a>
-            <ul>
-                <li><a href="http://smbz.faltzershq.com/">Super Mario Bros. Z</a></li>
-            </ul>
-        </li>
-        <li><a href="[url controller="blog" action="view" category="projects" /]">[gettext]Projects[/gettext]</a>
-            <ul>
-                <li><a href="http://mmbnonline.net/">mmbnonline</a></li>
-                <li><a href="http://github.com/faltzer/muse">muse</a></li>
-                <li><a href="http://github.com/faltzer/phanpy">phanpy</a></li>
-                <li><a href="[url controller="blog" action="view" category="parasol-boards" /]">parasol boards</a></li>
-                <li><a href="http://github.com/faltzer/suit-pylons">suit-pylons</a></li>
-            </ul>
-        </li>
-
-        <li><a href="#">[gettext]Interesting[/gettext]</a>
-            <ul>
-                <li><a href="http://pseudoroid.blogspot.com/">Pseudoroid</a></li>
-            </ul>
-        </li>
 
         <li><a href="#">[gettext]Categories[/gettext]</a>
             <ul>
@@ -91,8 +70,7 @@
         [c entities="false"]content[/c]
     </div>
     <div id="footer">
-        <p>All content is &copy; 2006-2010 Chris Santiago. Unless otherwise specified, all content here is available under the <a href="http://creativecommons.org/licenses/by/3.0/us/">Creative Commons 3.0</a> license.<br>Icons by <a href="http://www.famfamfam.com/">famfamfam</a> &mdash; Powered by <a href="http://github.com/faltzer/muse">Muse</a>.</p>
-        <p><a href="http://www.suitframework.com/slacks/?referrer=true" title="Debug this page with SLACKS"><img src="/stuff/slacks.png" alt="SLACKS"></a></p>
+        <p>All content is &copy; 2006-2010 Chris Santiago. Unless otherwise specified, all content here is available under the <a href="http://creativecommons.org/licenses/by/3.0/us/">Creative Commons 3.0</a> license.<br>Icons by <a href="http://www.famfamfam.com/">famfamfam</a> &mdash; Powered by <a href="http://github.com/chrisrsantiago.com/">Muse</a>.</p>
     </div>
 </body>
 </html>

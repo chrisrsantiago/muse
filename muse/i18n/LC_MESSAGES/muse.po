@@ -1,0 +1,95 @@
+# -*- coding: utf-8 -*-
+# Copyright (C) 2006-2010 Chris Santiago.
+# http://faltzershq.com/
+
+"Project-Id-Version: Muse\n"
+"Report-Msgid-Bugs-To: faltzerr@aol.com\n"
+"POT-Creation-Date: 2010-08-10 03:21:30\n"
+"PO-Revision-Date: 2010-08-10 03:21:30\n"
+"Last-Translator: Chris Santiago faltzerr@aol.com\n"
+"Language-Team: English <faltzerr@aol.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 0.9dev-r215\n"
+
+msgid "Add Comment"
+msgstr ""
+
+msgid "Add Yours"
+msgstr ""
+
+msgid "All content is &copy; 2006-2010 Chris Santiago. Unless otherwise specified, all of the content here is available under the <a href=\"http://creativecommons.org/licenses/by/3.0/us/\">Creative Commons 3.0</a> license.  <a href=\"http://github.com/chrisrsantiago/muse\">Get the source for this website</a>."
+msgstr ""
+
+msgid "Categories"
+msgstr ""
+
+msgid "Current Alias:"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "For more information, please visit the official OpenID website"
+msgstr ""
+
+msgid "Hello,"
+msgstr ""
+
+msgid "Home"
+msgstr ""
+
+msgid "If you already know your OpenID URL, then you may type it in."
+msgstr ""
+
+msgid "Logging in with your OpenID"
+msgstr ""
+
+msgid "Logout"
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "OpenID is a decentralized login system that allows users to use already existing accounts to log-in to websites that support it. In comparison to separate registration systems, users do not have to enter or re-supply redundant information such as passwords, because this is all handled by the OpenID providers."
+msgstr ""
+
+msgid "Posted on"
+msgstr ""
+
+msgid "Posts categorized under"
+msgstr ""
+
+msgid "Projects"
+msgstr ""
+
+msgid "Sign-In"
+msgstr ""
+
+msgid "Sites"
+msgstr ""
+
+msgid "Their two-cents"
+msgstr ""
+
+msgid "There are no posts. That is unacceptable."
+msgstr ""
+
+msgid "There were no comments made for this post.  Be a leader and make one!"
+msgstr ""
+
+msgid "Website"
+msgstr ""
+
+msgid "What is OpenID?"
+msgstr ""
+
+msgid "What is this?"
+msgstr ""
+
+msgid "getting an OpenID"
+msgstr ""
+
+msgid "reCaptcha input invalid."
+msgstr ""

@@ -322,9 +322,9 @@ div#header
 
 div#header div#logo
 {
-    background: transparent url('/images/polly.png') no-repeat;
+    /* Ideally, you would put your logo here background: transparent url('/images/logo.png') no-repeat;
     height: 298px;
-    width: 218px;
+    width: 218px; */
     position: absolute;
     top: 0;
 }

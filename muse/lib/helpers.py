@@ -19,14 +19,20 @@
 # THE SOFTWARE.
 
 """Helper functions"""
+
 import json
 
 from pylons import config, tmpl_context as c, url
-from recaptcha.client.captcha import displayhtml
-from webhelpers.pylonslib import Flash
+from webhelpers.pylonslib import Flash, secure_form
 from phanpy.helpers import (base, convertdate, converttext, getip,
     htmlencode, htmlfill, slug
 )
+
+__all__ = [
+    'base', 'breadcrumbs', 'comment_canedit', 'comment_editing', 'convertdate', 
+    'converttext', 'flash', 'flash_pop', 'getip', 'htmlencode', 'htmlfill',
+    'secure_form', 'slug'
+]
 
 flash = Flash()
 
@@ -73,9 +79,3 @@ def flash_pop():
     """
     c._flash = flash.pop_messages()
     return ''
-
-def recaptcha():
-    """Display reCaptcha only if the user is not identified."""
-    if c.user.id:
-        return ''
-    return displayhtml(config.get('recaptcha.public_key', ''))

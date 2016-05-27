@@ -24,14 +24,20 @@ except ImportError:
     from ez_setup import use_setuptools
     use_setuptools()
     from setuptools import setup, find_packages
+try:
+    from babel.messages import frontend as babel
+except ImportError:
+    print 'The Babel package is not installed; to install, run:'
+    print 'easy_install babel'
+    exit()
 
 setup(
     name='muse',
     version='1.0',
     description='personal blogging engine',
-    author='Faltzer (Chris Santiago)',
-    author_email='faltzerr@aol.com',
-    url='http://faltzershq.com/',
+    author='Faltzer',
+    author_email='chrisrsantiago@aol.com',
+    url='http://github.com/chrisrsantiago/muse',
     install_requires=[
         'Pylons>=1.0',
         'SQLAlchemy>=0.6.3',
@@ -48,7 +54,20 @@ setup(
     packages=find_packages(exclude=['ez_setup']),
     include_package_data=True,
     test_suite='nose.collector',
-    package_data={'muse': ['i18n/*/LC_MESSAGES/*.mo']},
+    cmdclass={
+        'compile_catalog': babel.compile_catalog,
+        'extract_messages': babel.extract_messages,
+        'init_catalog': babel.init_catalog,
+        'update_catalog': babel.update_catalog
+    },
+    message_extractors = {
+        'muse': [
+            ('**.py', 'python', None),
+            ('templates/**.tpl', 'suit', None),
+            ('public/**', 'ignore', None)
+        ]
+    },
+    package_data={'muse': ['i18n/*/LC_MESSAGES/*']},
     zip_safe=False,
     paster_plugins=['PasteScript', 'Pylons'],
     entry_points='''

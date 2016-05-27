@@ -18,10 +18,13 @@ def load_environment(global_conf, app_conf):
     config = PylonsConfig()
 
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    paths = dict(root=root,
-                 controllers=os.path.join(root, 'controllers'),
-                 static_files=os.path.join(root, 'public'),
-                 templates=os.path.join(root, 'templates'))
+    paths = dict(
+        root=root,
+        controllers=os.path.join(root, 'controllers'),
+        data=os.path.join(root, 'data'),
+        static_files=os.path.join(root, 'public'),
+        templates=os.path.join(root, 'templates'),
+    )
 
     # Initialize config with the basic options
     config.init_app(global_conf, app_conf, package='muse', paths=paths)
@@ -37,11 +40,17 @@ def load_environment(global_conf, app_conf):
         'expire': config.get('cache_expire', 3600),
         'invalidate_on_startup': True
     }
+    config['cache_options_nonpage'] = {
+        'expire': config.get('cache_expire', 3600),
+        'invalidate_on_startup': True
+    }
     # Setup SQLAlchemy
     config['pylons.app_globals'].sa_engine = engine_from_config(config,
         'sqlalchemy.'
     )
     model.init_model(config['pylons.app_globals'].sa_engine)
+	# Create tables if they don't already exist.
+	model.metadata.create_all(bind=model.meta.engine)
     # Setup SUIT rules.
     config['suit.rules'] = rules.rules
 

@@ -3,6 +3,7 @@ import json
 
 from whoosh.index import create_in
 from whoosh.fields import ID, Schema, STORED, TEXT
+from webhelpers.html.render import sanitize
 from pylons import config
 
 from muse.model import Post
@@ -25,18 +26,27 @@ def build_indexes():
     writer = index.writer()
     for post in Post.all():
         writer.add_document(
-            title=post.title,
-            content=post.content,
-            summary=post.summary,
-            url=u'%s' % (json.dumps({
-                'controller': 'blog',
-                'action': 'view',
-                'category': post.category.slug,
-                'slug': post.slug
-            })),
-            category=u'%s' % (json.dumps(
-                {'name': post.category.title, 'slug': post.category.slug}
-            )),
+            title=sanitize(post.title),
+            # strip HTML tags so search results aren't comprised of partial
+            # HTML tags thus ruining the page.
+            content=sanitize(post.content),
+            summary=u'%s' % (sanitize(post.summary),),
+            url=json.dumps(
+                {
+                    'controller': 'blog',
+                    'action': 'view',
+                    'category': post.category.slug,
+                    'slug': post.slug
+                },
+                ensure_ascii=False
+            ),
+            category=json.dumps(
+                {
+                'name': sanitize(post.category.title),
+                'slug': post.category.slug
+                },
+                ensure_ascii=False
+            )
         )
     writer.commit()
     return index

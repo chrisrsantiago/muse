@@ -5,7 +5,7 @@
 [if condition="profiles"]
     <ul>
     [loop value="profile" iterable="profiles"]
-        <li><a href="[url controller="account" action="profile" id="[c]profile.id[/c]" /]">[c]profile.name[/c]</a></li>
+        <li><a href="[url current="true" id="[c]profile.id[/c]" /]">[c]profile.name[/c]</a></li>
     [/loop]
     </ul>
 [/if]

@@ -2,7 +2,7 @@
 [assign var="title"][gettext]Login/Register[/gettext][/assign]
 [transform function="base"]
 
-<form action="[url controller="account" action="login" /]" method="post">
+<form action="[url current="true" /]" method="post">
     <p><input id="openid_identifier" name="openid_identifier" type="text">&nbsp;<input type="submit" value="[gettext]Login[/gettext]"></p>
 </form>
 

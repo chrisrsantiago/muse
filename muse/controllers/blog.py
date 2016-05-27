@@ -3,11 +3,12 @@ import json
 
 from pylons import config, request, response, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
-from pylons.decorators import cache
+from pylons.decorators import cache, secure
 from routes import request_config
 from sqlalchemy.orm.exc import NoResultFound
-from recaptcha.client import captcha
-from formencode.validators import Invalid as FormError
+from akismet import Akismet
+from formencode import Schema, validators
+from formencode.schema import SimpleFormValidator
 from whoosh.highlight import highlight, HtmlFormatter, ContextFragmenter
 from whoosh.qparser import MultifieldParser
 from webhelpers.feedgenerator import Atom1Feed
@@ -17,11 +18,72 @@ from muse.lib.base import _, BaseController, h, render
 from muse import model
 
 log = logging.getLogger(__name__)
-
 index = search.build_indexes()
 
-class BlogController(BaseController):
+__all__ = [
+    'BlogController', 'CategoryId', 'CategoryTitle', 'CategoryForm',
+    'CommentForm', 'CommentUserForm', 'index', 'PostForm' 
+]
 
+class CategoryId(validators.Int):
+    """Checks against the database to verify that a category exists."""
+    def _to_python(self, value, c):
+        try:
+            category = model.Category.by_id(value).one()
+        except NoResultFound:
+            raise validators.Invalid(_('Category does not exist'), value, c)
+        return validators.Int._to_python(self, value, c)
+
+
+class CategoryTitle(validators.UnicodeString):
+    """Checks against the database to verify that a category doesn't exist."""
+    def _to_python(self, value, c):
+        try:
+            category = model.Category.by_slug(value).one()
+            raise validators.Invalid(
+                _('There is already a category with that name.'), value, c
+            )
+        except NoResultFound:
+            pass
+        return validators.UnicodeString._to_python(self, value, c)
+
+
+class CategoryForm(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+    delete = validators.StringBoolean(if_missing=False)
+    title = CategoryTitle(not_empty=True, strip=True)
+
+
+class CommentForm(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = False
+    comment = validators.UnicodeString(not_empty=True, strip=True)
+    email = validators.Email(not_empty=True, resolve_domain=True)
+    name = validators.UnicodeString(not_empty=True, strip=True)
+    url = validators.URL(add_http=True)
+
+
+class CommentUserForm(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+    comment = validators.UnicodeString(not_empty=True, strip=True)
+    delete = validators.StringBoolean(if_missing=False)
+
+
+class PostForm(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+    delete = validators.StringBoolean(if_missing=False)
+    title = validators.UnicodeString(not_empty=True, strip=True)
+    category_id = CategoryId()
+    category_title = CategoryTitle()
+    slug = validators.UnicodeString(strip=True)
+    summary = validators.UnicodeString()
+    content = validators.UnicodeString(not_empty=True, strip=True)
+
+
+class BlogController(BaseController):
     def index(self, rss=False):
         """The default page is loaded, as no post has been specified."""
         @cache.beaker_cache(**config['cache_options'])
@@ -37,9 +99,10 @@ class BlogController(BaseController):
 
         return render('index.tpl', slacks=True)
 
-    def edit_category(self):
+    @secure.authenticate_form
+    def edit_category(self, category_view):
         try:
-            form = model.forms.Category().to_python(request.POST)
+            form = CategoryForm().to_python(request.POST)
             if form['delete']:
                 posts = model.Post.by_category(c.category.id)
                 for post in posts.all():
@@ -59,17 +122,18 @@ class BlogController(BaseController):
                     category=c.category.slug
                 )
             redirect(redirect_url)
-        except FormError, e:
-            return h.htmlfill(e, form=post)
+        except validators.Invalid, e:
+            return h.htmlfill(e, form=category_view)
 
+    @secure.authenticate_form
     def edit_comment(self, comment, post):
         try:
-            form = model.forms.CommentUser().to_python(request.POST)
+            form = CommentUserForm().to_python(request.POST)
             if form['delete']:
                 model.Comment.by_id(comment.id).delete()
                 c.post.comments_count -= 1
                 model.session.commit()
-                h.flash(_('Comment successfully deleted.'), 'success')
+                h.flash(_('Comment deleted successfully.'), 'success')
                 redirect_url = c.post_url
             else:
                 comment.content = form['comment']
@@ -77,12 +141,13 @@ class BlogController(BaseController):
                 h.flash(_('Comment edited successfully.'), 'success')
                 redirect_url = '%s#comment-%d' % (c.post_url, comment.id)
             redirect(redirect_url)
-        except FormError, e:
+        except validators.Invalid, e:
             return h.htmlfill(e, form=post)
 
+    @secure.authenticate_form
     def edit_post(self, post):
         try:
-            form = model.forms.Post().to_python(request.POST)
+            form = PostForms().to_python(request.POST)
             if form['delete']:
                 model.Comment.by_post(c.post.id).delete()
                 model.Post.by_id(c.post.id).delete()
@@ -107,43 +172,61 @@ class BlogController(BaseController):
                     slug=c.post.slug
                 )
             redirect(redirect_url)
-        except FormError, e:
+        except validators.Invalid, e:
             return h.htmlfill(e, form=post)
 
+    @secure.authenticate_form
     def new_comment(self, post_form):
         remote_ip = h.getip()
         try:
             if c.user.id:
-                form = model.forms.CommentUser().to_python(request.POST)
+                form = CommentUserForm().to_python(request.POST)
                 # Users do not have to pass any specific information.
                 comment_kwargs = {'user_id': c.user.id}
             else:
-                form = model.forms.Comment().to_python(request.POST)
-                recaptcha_resp = captcha.submit(
-                    form['recaptcha_challenge_field'],
-                    form['recaptcha_response_field'],
-                    config['recaptcha.private_key'],
-                    remote_ip
-                )
+                form = CommentForm().to_python(request.POST)
                 comment_kwargs = {
                     'email': form['email'],
                     'url': form['url'],
                     'name': form['name']
                 }
-                if not recaptcha_resp.is_valid:
-                    c.recaptcha_error = (recaptcha_resp.is_valid)
-                    return post
-        except FormError, e:
+        except validators.Invalid, e:
             return h.htmlfill(e, form=post_form)
-
-        comment = model.Comment(c.post.id, form['comment'], ip=remote_ip,
+        # Use Akismet if a key has been provided to verify if a comment is
+        # SPAM.  If it is marked as SPAM, then it will be hidden from view and
+        # shown only to administrators, with the option of whether to approve
+        # a comment or not.
+        akismet_key = config.get('akismet.key', '')
+        akismet_data = {
+            'user_agent': request.environ.get('HTTP_USER_AGENT', ''),
+            'user_ip': h.getip()
+        }
+        if akismet_key:
+            akismet = Akismet(akismet_key)
+            if akismet.comment_check(form['comment'], data=akismet_data):
+                comment_args['spam'] = 1
+                h.flash(
+                    _('This comment has been marked for admin approval.'),
+                    'warning'
+                )
+        # Finally, add the comment.
+        comment = model.Comment(
+            c.post.id,
+            form['comment'],
+            ip=remote_ip,
             **comment_kwargs
         )
         c.post.comments_count += 1
         model.session.add(comment)
         model.session.commit()
-        redirect('%s#comment-%s' % (c.post_url, comment.id))
+        redirect_url = '%s' % (url.current(),)
+        if not comment.spam:
+            redirect_url = u''.join(
+                [redirect_url, '#comment-%s' % (comment.id,)]
+            )
+        redirect(redirect_url)
 
+    @secure.authenticate_form
     def new_post(self):
         """Writing posts."""
         if not c.user.admin:
@@ -156,7 +239,7 @@ class BlogController(BaseController):
             return post_write
 
         try:
-            form = model.forms.Post().to_python(request.POST)
+            form = PostForm().to_python(request.POST)
             category_id = self.set_category(form)
             slug = self.set_slug(form)
             post = model.Post(
@@ -170,15 +253,19 @@ class BlogController(BaseController):
             model.session.add(post)
             model.session.commit()
             redirect_url = url(controller='blog', action='view',
-                category=post.category.slug, id=post.slug
+                category=post.category.slug, slug=post.slug
             )
             redirect(redirect_url)
-        except FormError, e:
+        except validators.Invalid, e:
             return h.htmlfill(e, form=post_write)
 
     def rss(self, posts):
-        host = request_config().host
+        if not posts:
+            h.flash('There are no posts to show an RSS Feed for.', 'warning')
+            redirect(url(controller='blog', action='index'))
+
         author = model.User.first()
+        host = request_config().host
         feed_kwargs = {}
         if author.email:
             feed_kwargs['author_email'] = author.email
@@ -326,7 +413,7 @@ class BlogController(BaseController):
             if request.environ['REQUEST_METHOD'] != 'POST':
                 return category_view
 
-            return self.edit_category()
+            return self.edit_category(category_view)
         except (NoResultFound, ValueError):
             # There is no category, so our last option is that it's a
             # page.

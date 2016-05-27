@@ -29,6 +29,7 @@ from pylons.i18n import get_lang, set_lang
 from pylons.i18n.translation import ugettext as _
 from sqlalchemy.orm.exc import NoResultFound
 from phanpy.templating import render
+import suit
 
 from muse import model
 from muse.lib import helpers as h
@@ -36,12 +37,15 @@ from muse.lib import helpers as h
 __all__ = ['_', 'BaseController', 'h', 'render']
 
 class BaseController(WSGIController):
+    def __after__(self):
+        suit.log = {'hash': {}, 'contents': []}
+
     def __before__(self):
-        @cache.beaker_cache(**config['cache_options'])
+        @cache.beaker_cache(**config['cache_options_nonpage'])
         def get_categories():
             return model.Category.all()
 
-        @cache.beaker_cache(**config['cache_options'])
+        @cache.beaker_cache(**config['cache_options_nonpage'])
         def get_user():
             try:
                 return model.User.by_id(session['userid']).one()
@@ -56,8 +60,11 @@ class BaseController(WSGIController):
             set_lang(request.GET['language'])
         except KeyError:
             pass
+        c.blog_title = config['blog.title']
+        c.blog_tagline = config['blog.tagline']
         c.breadcrumbs = []
         c.categories = get_categories()
+        c.csrf_token = h.secure_form.auth_token_hidden_field()
         c.user = get_user()
 
     def __call__(self, environ, start_response):

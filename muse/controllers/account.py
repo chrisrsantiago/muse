@@ -7,10 +7,11 @@ from pylons.controllers.util import abort, redirect
 from routes import request_config
 from sqlalchemy.orm.exc import NoResultFound
 from openid.consumer.consumer import Consumer
+from openid.yadis.discover import DiscoveryFailure
 from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.store.filestore import FileOpenIDStore
-from formencode.validators import Invalid as FormError
-import pygeoip
+from formencode import validators, Schema
+from pygeoip import GeoIP
 
 from muse.lib.base import _, BaseController, h, render
 from muse.lib.decorators import require
@@ -18,10 +19,24 @@ from muse import model
 
 log = logging.getLogger(__name__)
 
+class LoginForm(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+    openid_identifier = validators.OpenId(not_empty=True)
+
+
+class ProfileForm(Schema):
+    allow_extra_fields = True
+    filter_extra_fields = True
+    delete = validators.StringBoolean(if_missing=False)
+    identifier = validators.OpenId(not_empty=True)
+    name = validators.UnicodeString(not_empty=True, strip=True)
+    email = validators.Email(not_empty=False, resolve_domain=True)
+    website = validators.URL(add_http=True)
+
+
 class AccountController(BaseController):
-    geoip = pygeoip.GeoIP(
-        os.path.join(config['pylons.paths']['root'], 'data', 'geoip.dat')
-    )
+    geoip = GeoIP(os.path.join(config['pylons.paths']['data'], 'geoip.dat'))
     openid_store = FileOpenIDStore('/var/tmp')
 
     @require('guest')
@@ -32,15 +47,23 @@ class AccountController(BaseController):
             return login
 
         try:
-            form = model.forms.Login().to_python(request.params)            
-        except FormError, e:
+            form = LoginForm().to_python(request.POST)            
+        except validators.Invalid, e:
             return h.htmlfill(e, form=login)
 
-        cons = Consumer(session=session, store=self.openid_store)
-        auth_request = cons.begin(form['openid_identifier'])
-        auth_request.addExtension(SRegRequest(optional=[
-            'nickname', 'email'
-        ]))
+        try:
+            cons = Consumer(session=session, store=self.openid_store)
+            auth_request = cons.begin(form['openid_identifier'])
+            auth_request.addExtension(SRegRequest(optional=[
+                'nickname',
+                'email'
+            ]))
+        except DiscoveryFailure:
+            h.flash(
+                _('The specified URL is not a valid OpenID end-point.'),
+                'error'
+            )
+            redirect(url(controller='account', action='login'))
         host = request.headers['host']
         realm = '%s://%s' % (request_config().protocol, host)
         return_url = url(
@@ -70,16 +93,24 @@ class AccountController(BaseController):
             sreg_res = SRegResponse.fromSuccessResponse(result)
             try:
                 email = sreg_res['email']
-            except TypeError, KeyError:
+            except (TypeError, KeyError):
                 email = ''
 
-            if sreg_res and 'nickname' in sreg_res:
+            try:
                 name = sreg_res['nickname']
-            else:
+            except (TypeError, KeyError):
                 name = result.identity_url
-            user = model.User(name=name, identifier=result.identity_url,
+            user = model.User(
+                name=name,
+                identifier=result.identity_url,
                 email=email
             )
+            try:
+                model.User.all()
+            except NoResultFound:
+                # Since you're going to be the only user, might as well grant
+                # you administrator privileges.
+                user.admin = True
             model.session.add(user)
             model.session.commit()
             session['userid'] = user.id
@@ -158,7 +189,7 @@ class AccountController(BaseController):
             return profile_page
 
         try:
-            form = model.forms.Profile().to_python(request.POST)
+            form = ProfileForm().to_python(request.POST)
             # Only administrators can delete users.
             if form['delete'] and c.user.admin:
                 # Delete all posts, comments and finally the profile for this
@@ -188,7 +219,7 @@ class AccountController(BaseController):
                     id=c.profile.id
                 )
             redirect(redirect_url)
-        except FormError, e:
+        except validators.Invalid, e:
             return h.htmlfill(e, profile_page)
 
         return profile_page
